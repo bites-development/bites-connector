@@ -37,6 +37,8 @@ class BitesServiceProvider extends ServiceProvider
         $packagePath = 'Middleware/CheckAuthUser.stub';
         $targetPath = app_path('Http/Middleware/CheckAuthUser.php');
         if (File::exists($targetPath)) {
+            $kernel = $this->app->make(Kernel::class);
+            $kernel->prependMiddleware(CheckAuthUser::class);
             return;
         }
         $stubPath = __DIR__ . '/../' . $packagePath;
