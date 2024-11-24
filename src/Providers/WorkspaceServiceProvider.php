@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Providers;
 
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Modules\BitesMiddleware\Models\UserModel;
 use Modules\BitesMiddleware\Models\Workspace;
 use Modules\BitesMiddleware\Models\WorkspaceModel;
+use Modules\BitesMiddleware\Models\WorkspaceUser;
 use Modules\BitesMiddleware\Observers\DynamicWorkspaceObserver;
 use Modules\BitesMiddleware\Observers\WorkspaceObserver;
 
@@ -59,8 +61,39 @@ class WorkspaceServiceProvider extends ServiceProvider
         $filteredModules = config('bites.WORKSPACE.FILTERED_MODULES');
         foreach ($filteredModules as $filteredModule) {
             $filteredModule::addGlobalScope('workspace', function ($builder) use ($filteredModule) {
-                $builder->where('workspace_id', request()->header('WORKSPACE_ID', 0));
-                $builder->orWhereNull('workspace_id');
+                $filteredModuleTable = ((new $filteredModule))->getTable();
+                $workspaceTable = (new WorkspaceUser())->getTable();
+                $userModelTable = (new UserModel())->getTable();
+
+                //Workspace Access To Model
+                $builder->leftJoin(
+                    $workspaceTable,
+                    function ($join) use ($filteredModule, $workspaceTable, $filteredModuleTable) {
+                        $join->on(
+                            $workspaceTable . '.workspace_id',
+                            $filteredModuleTable . '.workspace_id'
+                        );
+                    }
+                );
+
+                //Specific User Access To Model
+                $builder->leftJoin(
+                    $userModelTable,
+                    function ($join) use ($filteredModule, $userModelTable, $filteredModuleTable) {
+                        $join->on('model_id', $filteredModuleTable . '.' . (new $filteredModule)->getKeyName());
+                        $join->on($userModelTable . '.user_id', DB::raw(request()->user()?->id ?? 0));
+                        $join->where('model_type',$filteredModule);
+                    }
+                );
+
+                //Public Access Workspace
+                $builder->orWhereNull($filteredModuleTable . '.workspace_id');
+                //Access By Current Workspace
+                $builder->where($filteredModuleTable . '.workspace_id', request()->header('WORKSPACE_ID', 0));
+                //Access By User Inside Workspace
+                $builder->orWhere($workspaceTable . '.user_id', request()->user()?->id ?? 0);
+                //Specific User Access To Model
+                $builder->orWhere($userModelTable . '.user_id', request()->user()?->id ?? 0);
             });
         }
     }
@@ -71,6 +104,7 @@ class WorkspaceServiceProvider extends ServiceProvider
         foreach ($filteredModules as $filteredModule) {
             $filteredModule::resolveRelationUsing('workspaceMaster', function (Model $model) use ($filteredModule) {
                 $class = config('bites.WORKSPACE.MASTER_MORPH_WORKSPACE_NAME', WorkspaceModel::class);
+
                 return $model->morphMany($class, 'model');
             });
         }
@@ -94,7 +128,8 @@ class WorkspaceServiceProvider extends ServiceProvider
     }
 
 
-    private function syncMorph($relationFunction,$data){
+    private function syncMorph($relationFunction, $data)
+    {
         // Get the current related IDs
         $existing = $this->{$relationFunction}()->pluck('id')->toArray();
 

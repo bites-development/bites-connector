@@ -7,15 +7,17 @@ namespace Modules\BitesMiddleware\Models;
 use Illuminate\Database\Eloquent\Model;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
-class WorkspaceMasterDB extends Model
+class UserModel extends Model
 {
     use UseMiddlewareDBTrait;
 
-    protected $table = 'workspaces';
+    public $timestamps = false;
+
+    protected $table = 'user_models';
     protected $guarded = [];
 
-    public function users(){
-        return $this->belongsToMany(User::class,(new WorkspaceUser)->getTable());
+    public function model()
+    {
+        return $this->setConnection('mysql')->morphTo();
     }
-
 }

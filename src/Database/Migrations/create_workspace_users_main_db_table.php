@@ -6,15 +6,19 @@ use Illuminate\Support\Facades\Schema;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 return new class extends Migration {
+
     use UseMiddlewareDBTrait;
 
     public function up()
     {
-        Schema::create('workspace_models', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('workspace_id');
-            $table->morphs('model');
-        });
+        if (!(Schema::hasTable('workspace_users'))) {
+            Schema::create('workspace_users', function (Blueprint $table) {
+                $table->unsignedBigInteger('workspace_id')->index();
+                $table->unsignedBigInteger('user_id')->index();
+                $table->index(['workspace_id', 'user_id']);
+                $table->timestamps();
+            });
+        }
     }
 
     public function getConnection(): string

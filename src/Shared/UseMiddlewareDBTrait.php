@@ -3,6 +3,11 @@ namespace Modules\BitesMiddleware\Shared;
 
 trait UseMiddlewareDBTrait
 {
+    public function __construct()
+    {
+        $this->setConf();
+    }
+
     public function getConnectionName(): string
     {
         $this->setConf();
@@ -25,10 +30,12 @@ trait UseMiddlewareDBTrait
         unset($config['collation']);
         config()->set('database.connections.' . $connection, $config);
         config()->set('database.MiddlewareDB', $connection);
-        if(!str_contains($this->getTable(),'.')) {
-            $this->setTable($databaseName . '.' . $this->getTable());
+        if(method_exists($this,'getTable')) {
+            if (!str_contains($this->getTable(), '.')) {
+                $this->setTable($databaseName . '.' . $this->getTable());
+            }
         }
-
+        return $this;
     }
 
     public function getDatabaseName(): string

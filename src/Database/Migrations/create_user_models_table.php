@@ -10,9 +10,9 @@ return new class extends Migration {
 
     public function up()
     {
-        Schema::create('workspace_models', function (Blueprint $table) {
+        Schema::create('user_models', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('workspace_id');
+            $table->unsignedBigInteger('user_id');
             $table->morphs('model');
         });
     }
