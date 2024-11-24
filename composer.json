@@ -1,5 +1,5 @@
 {
-  "name": "bites/bitesmiddleware",
+  "name": "bites-development/bites-connector",
   "description": "Bites Middleware",
   "autoload": {
     "psr-4": {
