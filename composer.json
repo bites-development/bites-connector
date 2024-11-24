@@ -1,0 +1,22 @@
+{
+  "name": "bites/bitesmiddleware",
+  "description": "Bites Middleware",
+  "autoload": {
+    "psr-4": {
+      "Modules\\BitesMiddleware\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Modules\\BitesMiddleware\\Providers\\BitesServiceProvider",
+        "Modules\\BitesMiddleware\\Providers\\WorkspaceServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+  },
+  "require": {
+    "mateusjunges/laravel-kafka": "^1.13.13"
+  }
+}
