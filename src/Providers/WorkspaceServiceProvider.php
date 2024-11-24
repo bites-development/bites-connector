@@ -8,10 +8,8 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use App\Http\Middleware\CheckAuthUser;
 use Modules\BitesMiddleware\Models\Workspace;
 use Modules\BitesMiddleware\Models\WorkspaceModel;
 use Modules\BitesMiddleware\Observers\DynamicWorkspaceObserver;
@@ -60,10 +58,9 @@ class WorkspaceServiceProvider extends ServiceProvider
     {
         $filteredModules = config('bites.WORKSPACE.FILTERED_MODULES');
         foreach ($filteredModules as $filteredModule) {
-            $filteredModule::addGlobalScope('workspace', function ($builder) {
-                if (request()->isJson()) {
-                    $builder->where('workspace_id', request()->header('WORKSPACE_ID', 0));
-                }
+            $filteredModule::addGlobalScope('workspace', function ($builder) use ($filteredModule) {
+                $builder->where('workspace_id', request()->header('WORKSPACE_ID', 0));
+                $builder->orWhereNull('workspace_id');
             });
         }
     }
@@ -108,13 +105,13 @@ class WorkspaceServiceProvider extends ServiceProvider
         $toDelete = array_diff($existing, $newIds);
         $this->{$relationFunction}()->whereIn('id', $toDelete)->delete();
 
-        foreach ($data as $comment) {
-            if (isset($comment['id']) && in_array($comment['id'], $existing)) {
+        foreach ($data as $item) {
+            if (isset($item['id']) && in_array($item['id'], $existing)) {
                 // Update existing
-                $this->{$relationFunction}()->where('id', $comment['id'])->update($comment);
+                $this->{$relationFunction}()->where('id', $item['id'])->update($item);
             } else {
                 // Create new
-                $this->{$relationFunction}()->create($comment);
+                $this->{$relationFunction}()->create($item);
             }
         }
     }

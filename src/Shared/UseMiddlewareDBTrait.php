@@ -31,4 +31,13 @@ trait UseMiddlewareDBTrait
 
     }
 
+    public function getDatabaseName(): string
+    {
+        return env('MASTER_DB_DATABASE','laravel');
+    }
+    public function getDatabaseTableName(): string
+    {
+        return env('MASTER_DB_DATABASE','laravel').'.'.$this->getTable();
+    }
+
 }
