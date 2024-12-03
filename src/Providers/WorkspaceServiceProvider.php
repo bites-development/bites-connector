@@ -116,7 +116,7 @@ class WorkspaceServiceProvider extends ServiceProvider
         foreach ($filteredModules as $filteredModule) {
             $table = (new $filteredModule)->getTable();
             if (Cache::get(md5($table . 'workspace_id')) == true) {
-                return;
+                continue;
             }
             if (Schema::hasTable($table) && !Schema::hasColumn($table, 'workspace_id')) {
                 Schema::table($table, function (Blueprint $table) {
