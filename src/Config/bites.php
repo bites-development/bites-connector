@@ -1,12 +1,14 @@
 <?php
 
 use Illuminate\Support\Str;
+use Modules\BitesMiddleware\Middleware\CheckAuthUser;
 use Modules\BitesMiddleware\Models\Workspace;
 use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
 use Modules\BitesMiddleware\Models\WorkspaceModel;
 
 return [
     'name' => 'Bite Middleware',
+    'CHECK_AUTH_PATH' => CheckAuthUser::class,
     'WORKSPACE' => [
         'MAIN_WORKSPACE_CLASS' => Workspace::class,
         'MASTER_WORKSPACE_CLASS' => WorkspaceMasterDB::class,

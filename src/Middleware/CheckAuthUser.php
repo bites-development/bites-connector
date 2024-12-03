@@ -1,6 +1,6 @@
 <?php
 
-namespace DummyNamespace\Http\Middleware;
+namespace Modules\BitesMiddleware\Middleware;
 
 use App\Models\User;
 use Carbon\Carbon;
@@ -9,9 +9,7 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 
 class CheckAuthUser
 {

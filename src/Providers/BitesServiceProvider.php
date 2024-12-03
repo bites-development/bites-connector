@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Modules\BitesMiddleware\Providers;
 
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
-use App\Http\Middleware\CheckAuthUser;
+use Modules\BitesMiddleware\Middleware\CheckAuthUser;
+use Modules\BitesMiddleware\Models\Workspace;
 
 class BitesServiceProvider extends ServiceProvider
 {
@@ -18,6 +18,7 @@ class BitesServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        $this->mergeConfig();
         $this->registerMigration();
         $this->publishAuth();
         $this->publishes(
@@ -34,21 +35,9 @@ class BitesServiceProvider extends ServiceProvider
 
     private function publishAuth()
     {
-        $packagePath = 'Middleware/CheckAuthUser.stub';
-        $targetPath = app_path('Http/Middleware/CheckAuthUser.php');
-        if (File::exists($targetPath)) {
-            $kernel = $this->app->make(Kernel::class);
-            $kernel->prependMiddleware(CheckAuthUser::class);
-            return;
-        }
-        $stubPath = __DIR__ . '/../' . $packagePath;
-        $namespace = app()->getNamespace();
-
-        $stubContent = File::get($stubPath);
-        $stubContent = str_replace('DummyNamespace', trim($namespace, '\\'), $stubContent);
-        File::put($targetPath, $stubContent);
+        $class = config('bites.CHECK_AUTH_PATH', CheckAuthUser::class);
         $kernel = $this->app->make(Kernel::class);
-        $kernel->prependMiddleware(CheckAuthUser::class);
+        $kernel->prependMiddleware($class);
     }
 
     private function syncMorph($relationFunction,$data){
@@ -73,4 +62,11 @@ class BitesServiceProvider extends ServiceProvider
         }
     }
 
+    private function mergeConfig()
+    {
+        $this->mergeConfigFrom(
+            __DIR__ . '/../Config/bites.php',
+            'bites'
+        );
+    }
 }
