@@ -89,7 +89,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                 //Public Access Workspace
                 $builder->orWhereNull($filteredModuleTable . '.workspace_id');
                 //Access By Current Workspace
-                $builder->where($filteredModuleTable . '.workspace_id', request()->header('WORKSPACE_ID', 0));
+                $builder->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
                 //Access By User Inside Workspace
                 $builder->orWhere($workspaceTable . '.user_id', request()->user()?->id ?? 0);
                 //Specific User Access To Model
