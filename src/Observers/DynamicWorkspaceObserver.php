@@ -13,7 +13,7 @@ class DynamicWorkspaceObserver
 
     public function saving($item)
     {
-        if (empty(request()->header('WORKSPACE_ID')) && empty($item->workspace_id)) {
+        if (empty(request()->header('ACTIVE-WORKSPACE')) && empty($item->workspace_id)) {
             throw new \RuntimeException('You have to pass workspace');
         }
         $workspaceId = request()->header('WORKSPACE_ID', $item->workspace_id);
