@@ -64,7 +64,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                 $filteredModuleTable = ((new $filteredModule))->getTable();
                 $workspaceTable = (new WorkspaceUser())->getTable();
                 $userModelTable = (new UserModel())->getTable();
-
+                $builder->select($filteredModuleTable.'.*');
                 //Workspace Access To Model
                 $builder->leftJoin(
                     $workspaceTable,
