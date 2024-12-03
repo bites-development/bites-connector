@@ -16,7 +16,7 @@ class DynamicWorkspaceObserver
         if (empty(request()->header('ACTIVE-WORKSPACE')) && empty($item->workspace_id)) {
             throw new \RuntimeException('You have to pass workspace');
         }
-        $workspaceId = request()->header('WORKSPACE_ID', $item->workspace_id);
+        $workspaceId = request()->header('ACTIVE-WORKSPACE', $item->workspace_id);
 
         if (empty(WorkspaceMasterDB::find($workspaceId))) {
             throw new \RuntimeException('Workspace not exist');
