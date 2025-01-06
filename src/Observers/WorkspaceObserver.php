@@ -18,10 +18,9 @@ class WorkspaceObserver
         $dbWorkspace = WorkspaceMasterDB::query()->where('id', $workspace->id)->first();
         $generateMapper = [];
         foreach ($map as $masterDBKey => $targetDBKey) {
-            if(is_callable($targetDBKey)){
+            if (is_callable($targetDBKey)) {
                 $generateMapper[$masterDBKey] = $targetDBKey($workspace);
-            }
-            else if (is_array($targetDBKey)) {
+            } elseif (is_array($targetDBKey)) {
                 $generateMapper[$masterDBKey] = $workspace->{$targetDBKey['key']} = $workspace->{$targetDBKey['key']} ?? $targetDBKey['default'];
             } else {
                 $targetDBKey = explode(',', $targetDBKey);
@@ -32,20 +31,9 @@ class WorkspaceObserver
                 }
             }
         }
-        if ($dbWorkspace) {
-            $dbWorkspace->update($generateMapper);
-        } else {
-            $dbWorkspace = WorkspaceMasterDB::query()->create($generateMapper);
-        }
 
         $workspace->id = $dbWorkspace->id;
-        //Kafka::publishOn('topic')
-        //    ->withBodyKey(
-        //                            'key', ['property-value'
-        //                        ])->send();
-        //foreach ($map as $key => $value) {
-        //    dd($workspace->$key);
-        //}
+
     }
 
 }

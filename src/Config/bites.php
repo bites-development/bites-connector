@@ -29,6 +29,9 @@ return [
             'status' => function ($workspace) {
                 return  $workspace->status ?? 1;
             },
+            'user_id' => function ($workspace) {
+                return  1;
+            },
         ],
         'FILTERED_MODULES'=>[
             //\App\Models\Posts::class,
