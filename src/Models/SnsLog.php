@@ -6,7 +6,6 @@ namespace Modules\BitesMiddleware\Models;
 
 use Modules\BitesMiddleware\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
-use Modules\BitesMiddleware\Database\factories\SnsFactory;
 
 class SnsLog extends Model
 {
@@ -26,9 +25,4 @@ class SnsLog extends Model
     protected $casts = [
         'id' => 'string',
     ];
-
-    protected static function newFactory(): SnsFactory
-    {
-        return SnsFactory::new();
-    }
 }
