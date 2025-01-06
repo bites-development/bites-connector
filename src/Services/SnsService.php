@@ -33,7 +33,7 @@ class SnsService
     /**
      * Publish a message to an SNS topic
      */
-    public function publish($message, string $topic)
+    public function publish($message, string $topic = 'Bites')
     {
         $topicArn = $this->generateTopicArn($topic);
         if(is_array($message)){
