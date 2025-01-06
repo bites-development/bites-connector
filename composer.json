@@ -17,6 +17,12 @@
   "scripts": {
   },
   "require": {
-    "mateusjunges/laravel-kafka": "^1.13.13"
+    "bites-development/bites-sns": "dev-main"
+  },
+  "repositories": {
+    "bites-development": {
+      "type": "vcs",
+      "url": "https://github.com/bites-development/bites-sns.git"
+    }
   }
 }
