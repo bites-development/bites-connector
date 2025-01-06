@@ -7,11 +7,11 @@ namespace Modules\BitesMiddleware\Controllers;
 use App\Http\Controllers\Controller;
 use Aws\Sns\Message;
 use Aws\Sns\MessageValidator;
-use Aws\Sns\SnsClient;
 use Modules\BitesMiddleware\Events\SnsMessageReceived;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\BitesMiddleware\Models\SnsLog;
+use Modules\BitesMiddleware\Services\SnsService;
 
 class SnsController extends Controller
 {
@@ -36,12 +36,9 @@ class SnsController extends Controller
             );
 
             if ($request->header('x-amz-sns-message-type') === 'SubscriptionConfirmation') {
-                $snsClient = new SnsClient(
-                    [
-                        'version' => 'latest',
-                        'region' => env('AWS_DEFAULT_REGION'),
-                    ]
-                );
+                /** @var SnsService $snsService */
+                $snsService = app()->make(SnsService::class);
+                $snsClient = $snsService->getClient();
 
                 $snsClient->confirmSubscription
                 (

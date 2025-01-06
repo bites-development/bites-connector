@@ -94,7 +94,7 @@ class SnsService
                 [
                     'TopicArn' => $topicArn,
                     'Protocol' => $protocol, // http, https, email, sms, etc.
-                    'Endpoint' => url('api/sns-listener'),
+                    'Endpoint' => env('APP_URL').'/api/sns-listener',
                 ]
             );
 
@@ -131,5 +131,10 @@ class SnsService
     public function generateTopicArn($topicName)
     {
         return "arn:aws:sns:{$this->region}:{$this->accountId}:{$topicName}";
+    }
+
+    public function getClient(): SnsClient
+    {
+        return $this->sns;
     }
 }
