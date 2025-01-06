@@ -19,7 +19,7 @@
   },
   "require": {
     "aws/aws-php-sns-message-validator": "^1.9",
-    "aws/aws-sdk-php": "^3.336",
+    "aws/aws-sdk-php": "*",
     "laravel-notification-channels/aws-sns": "^1.6"
   },
   "prefer-stable": true
