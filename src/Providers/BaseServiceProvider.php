@@ -83,4 +83,11 @@ abstract class BaseServiceProvider extends ServiceProvider
         }
     }
 
+    protected function replaceNamespace(string $filePath, string $oldNamespace, string $newNamespace)
+    {
+        $content = file_get_contents($filePath);
+        $updatedContent = str_replace("namespace $oldNamespace;", "namespace $newNamespace;", $content);
+        file_put_contents($filePath, $updatedContent);
+    }
+
 }

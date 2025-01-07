@@ -17,6 +17,7 @@ class SnsServiceProvider extends BaseServiceProvider
     {
         $this->registerConfig();
         $this->publishConfig();
+        $this->publishListener();
         $this->registerMigrations();
         $this->registerListeners();
     }
@@ -24,6 +25,20 @@ class SnsServiceProvider extends BaseServiceProvider
     public function register(): void
     {
         $this->registerRoutes();
+    }
+
+    public function publishListener(){
+        $destination = app_path('Listeners/TestListener.php');
+        $this->publishes(
+            [
+                __DIR__ . '/../Listeners/TestListener.php' => $destination,
+            ],'sns'
+        );
+        $this->app->terminating(function () use ($destination) {
+            if (file_exists($destination)) {
+                $this->replaceNamespace($destination, 'Modules\BitesMiddleware\Listeners', 'App\Listeners');
+            }
+        });
     }
 
     public function mapRoutes(): void
