@@ -10,7 +10,7 @@ return new class extends Migration {
 
     public function up()
     {
-        if (!(Schema::hasColumn('workspaces','user_id'))) {
+        if ((Schema::hasColumn('workspaces','user_id'))) {
             Schema::table('workspaces', function (Blueprint $table) {
                 $table->renameColumn('user_id','b_user_id');
             });
