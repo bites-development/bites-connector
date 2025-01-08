@@ -13,7 +13,7 @@ return new class extends Migration {
     {
         if (Schema::hasColumn('workspace_users','user_id')) {
             Schema::table('workspace_users', function (Blueprint $table) {
-                $table->dropIndex(['workspace_users_workspace_id_user_id_index']);
+                $table->dropIndex(['workspace_id','user_id']);
                 $table->renameColumn('user_id', 'b_user_id');
                 $table->index(['workspace_id', 'b_user_id']);
             });
