@@ -140,28 +140,4 @@ class WorkspaceServiceProvider extends ServiceProvider
         }
     }
 
-
-    private function syncMorph($relationFunction, $data)
-    {
-        // Get the current related IDs
-        $existing = $this->{$relationFunction}()->pluck('id')->toArray();
-
-        // Extract the IDs from the new data
-        $newIds = array_filter(array_column($data, 'id'));
-
-        // Find to delete
-        $toDelete = array_diff($existing, $newIds);
-        $this->{$relationFunction}()->whereIn('id', $toDelete)->delete();
-
-        foreach ($data as $item) {
-            if (isset($item['id']) && in_array($item['id'], $existing)) {
-                // Update existing
-                $this->{$relationFunction}()->where('id', $item['id'])->update($item);
-            } else {
-                // Create new
-                $this->{$relationFunction}()->create($item);
-            }
-        }
-    }
-
 }
