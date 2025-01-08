@@ -16,6 +16,6 @@ class TestListener
     {
         $message = $event->snsMessage;
         $dto = SnsNotificationDTO::fromArray($message);
-        Log::error($dto->message[0]);
+        Log::error(json_encode($dto->message));
     }
 }

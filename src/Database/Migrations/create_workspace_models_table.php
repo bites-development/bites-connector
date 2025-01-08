@@ -10,11 +10,13 @@ return new class extends Migration {
 
     public function up()
     {
-        Schema::create('workspace_models', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('workspace_id');
-            $table->morphs('model');
-        });
+        if(!Schema::hasTable('workspace_models')) {
+            Schema::create('workspace_models', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('workspace_id');
+                $table->morphs('model');
+            });
+        }
     }
 
     public function getConnection(): string

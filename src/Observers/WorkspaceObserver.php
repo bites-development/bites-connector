@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Observers;
 
-use Junges\Kafka\Facades\Kafka;
 use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
+use Modules\BitesMiddleware\Services\SnsService;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class WorkspaceObserver
@@ -32,8 +32,16 @@ class WorkspaceObserver
             }
         }
 
-        $workspace->id = $dbWorkspace->id;
+        if ($dbWorkspace) {
+            $dbWorkspace->update($generateMapper);
+        } else {
+            $dbWorkspace = WorkspaceMasterDB::query()->create($generateMapper);
+        }
 
+        $workspace->id = $dbWorkspace->id;
+        /** @var SnsService $snsService */
+        $snsService = app()->make(SnsService::class);
+        $snsService->publish($dbWorkspace->toArray());
     }
 
 }

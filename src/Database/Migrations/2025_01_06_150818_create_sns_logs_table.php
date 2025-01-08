@@ -8,12 +8,14 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('sns_logs', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->text('message');
-            $table->string('message_identifier')->unique();
-            $table->string('message_type')->index();
-            $table->timestamps();
-        });
+        if(!Schema::hasTable('sns_logs')) {
+            Schema::create('sns_logs', function (Blueprint $table) {
+                $table->uuid('id');
+                $table->text('message');
+                $table->string('message_identifier')->unique();
+                $table->string('message_type')->index();
+                $table->timestamps();
+            });
+        }
     }
 };

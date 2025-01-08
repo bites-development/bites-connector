@@ -10,11 +10,13 @@ return new class extends Migration {
 
     public function up()
     {
-        Schema::create('user_models', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->morphs('model');
-        });
+        if(!Schema::hasTable('user_models')) {
+            Schema::create('user_models', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->morphs('model');
+            });
+        }
     }
 
     public function getConnection(): string
