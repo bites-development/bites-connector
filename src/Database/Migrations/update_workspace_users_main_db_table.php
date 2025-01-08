@@ -11,9 +11,9 @@ return new class extends Migration {
 
     public function up()
     {
-        if ((Schema::hasColumn('workspace_users','user_id'))) {
+        if (Schema::hasColumn('workspace_users','user_id')) {
             Schema::table('workspace_users', function (Blueprint $table) {
-                $table->dropIndex(['workspace_id', 'user_id']);
+                $table->dropIndex(['workspace_users_workspace_id_user_id_index']);
                 $table->renameColumn('user_id', 'b_user_id');
                 $table->index(['workspace_id', 'b_user_id']);
             });
