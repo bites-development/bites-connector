@@ -17,8 +17,8 @@ class WorkspaceUserRepository
     public function inviteWorkspaceUser($workspaceId, $userId): Model|Builder
     {
        return $this->model->newQuery()->updateOrCreate(
-            ['workspace_id' => $workspaceId, 'user_id' => $userId],
-            ['workspace_id' => $workspaceId, 'user_id' => $userId]
+            ['workspace_id' => $workspaceId, 'b_user_id' => $userId],
+            ['workspace_id' => $workspaceId, 'b_user_id' => $userId]
         );
     }
 }

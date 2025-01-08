@@ -29,7 +29,7 @@ return [
             'status' => function ($workspace) {
                 return  $workspace->status ?? 1;
             },
-            'user_id' => function ($workspace) {
+            'b_user_id' => function ($workspace) {
                 return  1;
             },
         ],

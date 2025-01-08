@@ -92,7 +92,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                     $userModelTable,
                     function ($join) use ($filteredModule, $userModelTable, $filteredModuleTable) {
                         $join->on($userModelTable.'.model_id', $filteredModuleTable . '.' . (new $filteredModule)->getKeyName());
-                        $join->on($userModelTable . '.user_id', DB::raw(request()->user()?->id ?? 0));
+                        $join->on($userModelTable . '.b_user_id', DB::raw(request()->user()?->id ?? 0));
                         $join->where($userModelTable.'.model_type',$filteredModule);
                     }
                 );
@@ -104,9 +104,9 @@ class WorkspaceServiceProvider extends ServiceProvider
 
                 $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
                 // //Access By User Inside Workspace
-                $builder->orWhere($workspaceTable . '.user_id', request()->user()?->id ?? 0);
+                $builder->orWhere($workspaceTable . '.b_user_id', request()->user()?->id ?? 0);
                 // //Specific User Access To Model
-                $builder->orWhere($userModelTable . '.user_id', request()->user()?->id ?? 0);
+                $builder->orWhere($userModelTable . '.b_user_id', request()->user()?->id ?? 0);
             });
         }
     }
