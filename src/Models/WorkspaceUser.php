@@ -10,8 +10,6 @@ use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class WorkspaceUser extends Model
 {
-    use UseMiddlewareDBTrait;
-
     protected $guarded = [];
 
     public function user(): BelongsTo

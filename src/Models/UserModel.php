@@ -9,7 +9,6 @@ use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class UserModel extends Model
 {
-    use UseMiddlewareDBTrait;
 
     public $timestamps = false;
 

@@ -9,7 +9,6 @@ use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class WorkspaceModel extends Model
 {
-    use UseMiddlewareDBTrait;
 
     public $timestamps = false;
 
