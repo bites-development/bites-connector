@@ -13,6 +13,7 @@ return new class extends Migration {
                 $table->string('name');
                 $table->string('slug')->nullable();
                 $table->boolean('status')->default(1);
+                $table->unsignedBigInteger('b_user_id')->nullable();
                 $table->unsignedBigInteger('parent_id')->nullable();
                 $table->timestamps();
             });
