@@ -18,9 +18,4 @@ return new class extends Migration {
             });
         }
     }
-
-    public function getConnection(): string
-    {
-        return $this->getConnectionName();
-    }
 };
