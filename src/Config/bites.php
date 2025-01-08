@@ -30,7 +30,7 @@ return [
                 return  $workspace->status ?? 1;
             },
             'b_user_id' => function ($workspace) {
-                return  1;
+                return  auth()->user()?->id;
             },
         ],
         'FILTERED_MODULES'=>[
