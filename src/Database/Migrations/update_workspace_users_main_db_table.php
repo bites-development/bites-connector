@@ -16,7 +16,6 @@ return new class extends Migration {
                 $table->dropIndex(['workspace_id', 'user_id']);
                 $table->renameColumn('user_id', 'b_user_id');
                 $table->index(['workspace_id', 'b_user_id']);
-                $table->timestamps();
             });
         }
     }
