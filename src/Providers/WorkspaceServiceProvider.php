@@ -108,6 +108,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                 // //Specific User Access To Model
                 $builder->orWhere($userModelTable . '.b_user_id', request()->user()?->id ?? 0);
             });
+            dd($filteredModule::query()->toSql());
         }
     }
 
