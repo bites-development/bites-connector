@@ -110,9 +110,9 @@ class WorkspaceServiceProvider extends ServiceProvider
                 // //Specific User Access To Model
                 $builder->orWhere($userModelTable . '.b_user_id', request()->user()?->id ?? 0);
             });
-            Log::error($filteredModule::query()->toSql(),[]);
-            Log::error('User: '.request()->user()?->id ?? 0,[]);
-            Log::error('Workspace: ',request()->header('ACTIVE-WORKSPACE', 0),[]);
+            Log::error($filteredModule::query()->toSql());
+            Log::error('User: '.request()->user()?->id ?? 0);
+            Log::error('Workspace: '.request()->header('ACTIVE-WORKSPACE', 0));
         }
     }
 
