@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Modules\BitesMiddleware\Models\UserModel;
@@ -97,10 +98,11 @@ class WorkspaceServiceProvider extends ServiceProvider
                     }
                 );
 
-                //Public Access Workspace
-                $builder->orWhereNull($filteredModuleTable . '.workspace_id');
+
                 //Access By Current Workspace
                 $builder->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
+                //Public Access Workspace
+                $builder->orWhereNull($filteredModuleTable . '.workspace_id');
 
                 $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
                 // //Access By User Inside Workspace
@@ -108,7 +110,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                 // //Specific User Access To Model
                 $builder->orWhere($userModelTable . '.b_user_id', request()->user()?->id ?? 0);
             });
-            dd($filteredModule::query()->toSql());
+            Log::error($filteredModule::query()->toSql());
         }
     }
 
