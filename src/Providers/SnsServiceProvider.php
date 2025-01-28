@@ -34,11 +34,11 @@ class SnsServiceProvider extends BaseServiceProvider
                 __DIR__ . '/../Listeners/TestListener.php' => $destination,
             ],'sns'
         );
-        $this->app->terminating(function () use ($destination) {
-            if (file_exists($destination)) {
-                $this->replaceNamespace($destination, 'Modules\BitesMiddleware\Listeners', 'App\Listeners');
-            }
-        });
+        //$this->app->terminating(function () use ($destination) {
+        //    if (file_exists($destination)) {
+        //        $this->replaceNamespace($destination, 'Modules\BitesMiddleware\Listeners', 'App\Listeners');
+        //    }
+        //});
     }
 
     public function mapRoutes(): void
