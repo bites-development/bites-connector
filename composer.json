@@ -18,9 +18,9 @@
   "scripts": {
   },
   "require": {
-    "aws/aws-php-sns-message-validator": "^1.9",
+    "aws/aws-php-sns-message-validator": "*",
     "aws/aws-sdk-php": "*",
-    "laravel-notification-channels/aws-sns": "^1.6"
+    "laravel-notification-channels/aws-sns": "*"
   },
   "prefer-stable": true
 }
