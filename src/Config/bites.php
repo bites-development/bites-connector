@@ -14,7 +14,7 @@ return [
         'MASTER_WORKSPACE_CLASS' => WorkspaceMasterDB::class,
         'MASTER_MORPH_WORKSPACE_NAME' => WorkspaceModel::class,
         'WORKSPACE_COLUMN_MAP' => [
-            //'PROJECT_TABLE_KEY' => 'MASTER_DB_KEY'
+            //'MASTER_DB_KEY' => 'PROJECT_TABLE_KEY'
             'name' => 'name',
             //'slug' => 'slug',
             'slug' => function ($workspace) {
@@ -32,6 +32,9 @@ return [
             'b_user_id' => function ($workspace) {
                 return  auth()->user()?->id;
             },
+        ],
+        'TARGET_WORKSPACE_COLUMN_MAP' => [
+            //'PROJECT_TABLE_KEY' => 'MASTER_DB_KEY'
         ],
         'FILTERED_MODULES'=>[
             //\App\Models\Posts::class,
