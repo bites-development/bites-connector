@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\BitesMiddleware\Observers;
 
 use Modules\BitesMiddleware\Models\Workspace;
+use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class DynamicWorkspaceObserver
@@ -18,7 +19,7 @@ class DynamicWorkspaceObserver
         }
         $workspaceId = request()->header('ACTIVE-WORKSPACE', $item->workspace_id);
         $class = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS', Workspace::class);
-        $masterClass = config('bites.WORKSPACE.MASTER_WORKSPACE_CLASS', Workspace::class);
+        $masterClass = config('bites.WORKSPACE.MASTER_WORKSPACE_CLASS', WorkspaceMasterDB::class);
         $workspace = $masterClass::find($workspaceId);
         if (empty($workspace)) {
             throw new \RuntimeException('Workspace not exist');
@@ -41,6 +42,7 @@ class DynamicWorkspaceObserver
                     }
                 }
             }
+            $generateMapper = array_merge($generateMapper,['id'=>$workspaceId]);
             $class::query()->create($generateMapper);
         }
         $item->workspace_id = $workspaceId;
