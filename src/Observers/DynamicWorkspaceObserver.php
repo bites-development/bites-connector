@@ -26,7 +26,7 @@ class DynamicWorkspaceObserver
         }
 
         if (empty($class::find($workspaceId))) {
-            $map = config('bites.WORKSPACE.TARGET_WORKSPACE_COLUMN_MAP');
+            $map = config('bites.WORKSPACE.TARGET_WORKSPACE_COLUMN_MAP',[]);
             $generateMapper = [];
             foreach ($map as $targetDBKey => $masterDBKey) {
                 if (is_callable($masterDBKey)) {
@@ -42,8 +42,15 @@ class DynamicWorkspaceObserver
                     }
                 }
             }
+
             $generateMapper = array_merge($generateMapper,['id'=>$workspaceId]);
-            $class::query()->create($generateMapper);
+            $class = new $class();
+
+            foreach ($generateMapper as $key => $value){
+                $class->$key = $value;
+            }
+
+            $class->saveQuietly();
         }
         $item->workspace_id = $workspaceId;
     }

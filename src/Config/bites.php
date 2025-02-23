@@ -34,10 +34,11 @@ return [
             },
         ],
         'TARGET_WORKSPACE_COLUMN_MAP' => [
-            //'PROJECT_TABLE_KEY' => 'MASTER_DB_KEY'
+            'name' => 'name',
+            'slug' => 'slug',
         ],
         'FILTERED_MODULES'=>[
-            //\App\Models\Posts::class,
+            \App\Models\Posts::class,
         ],
     ]
 ];
