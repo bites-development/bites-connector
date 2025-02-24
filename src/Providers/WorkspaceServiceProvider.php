@@ -83,7 +83,7 @@ class WorkspaceServiceProvider extends ServiceProvider
                             $workspaceUserMap
                         ) {
                             $join->on(
-                                $workspaceUserTable . '.' . $workspaceUserMap['WORKSPACE_COLUMN'] ?? 'workspace_id',
+                                $workspaceUserTable . '.' . ( $workspaceUserMap['WORKSPACE_COLUMN'] ?? 'workspace_id' ),
                                 $filteredModuleTable . '.workspace_id'
                             );
                         }
@@ -121,7 +121,7 @@ class WorkspaceServiceProvider extends ServiceProvider
 
                     $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
                     //Access By User Inside Workspace
-                    $builder->orWhere($workspaceUserTable . '.'.$workspaceUserMap['USER_COLUMN'] ?? 'b_user_id', auth()->user()?->id ?? 0);
+                    $builder->orWhere($workspaceUserTable . '.'.( $workspaceUserMap['USER_COLUMN'] ?? 'b_user_id' ), auth()->user()?->id ?? 0);
                     // //Specific User Access To Model
                     $builder->orWhere($userModelTable . '.b_user_id', auth()->user()?->id ?? 0);
                 }
