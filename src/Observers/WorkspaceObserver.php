@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Observers;
 
+use Modules\BitesMiddleware\Events\WorkspaceCreated;
 use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
 use Modules\BitesMiddleware\Services\SnsService;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
@@ -42,6 +43,11 @@ class WorkspaceObserver
         /** @var SnsService $snsService */
         $snsService = app()->make(SnsService::class);
         $snsService->publish($dbWorkspace->toArray());
+
     }
 
+    public function saved($workspace)
+    {
+        event(new WorkspaceCreated($workspace));
+    }
 }
