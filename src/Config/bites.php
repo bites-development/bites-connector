@@ -5,6 +5,7 @@ use Modules\BitesMiddleware\Middleware\CheckAuthUser;
 use Modules\BitesMiddleware\Models\Workspace;
 use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
 use Modules\BitesMiddleware\Models\WorkspaceModel;
+use Modules\BitesMiddleware\Models\WorkspaceUser;
 
 return [
     'name' => 'Bite Middleware',
@@ -13,6 +14,11 @@ return [
         'MAIN_WORKSPACE_CLASS' => Workspace::class,
         'MASTER_WORKSPACE_CLASS' => WorkspaceMasterDB::class,
         'MASTER_MORPH_WORKSPACE_NAME' => WorkspaceModel::class,
+        'WORKSPACE_USER' => [
+            'USER_COLUMN' => 'b_user_id',
+            'WORKSPACE_COLUMN' => 'workspace_id',
+            'MODEL' => WorkspaceUser::class
+        ],
         'WORKSPACE_COLUMN_MAP' => [
             //'MASTER_DB_KEY' => 'PROJECT_TABLE_KEY'
             'name' => 'name',

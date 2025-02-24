@@ -60,59 +60,75 @@ class WorkspaceServiceProvider extends ServiceProvider
     private function applyGlobalScope()
     {
         $filteredModules = config('bites.WORKSPACE.FILTERED_MODULES');
+        $workspaceUserModel = config('bites.WORKSPACE.WORKSPACE_USER.MODEL', WorkspaceUser::class);
+
         foreach ($filteredModules as $filteredModule) {
-            $filteredModule::addGlobalScope('workspaces', function ($builder) use ($filteredModule) {
-                $filteredModuleTable = ((new $filteredModule))->getTable();
-                $workspaceTable = (new WorkspaceUser())->getTable();
-                $workspaceModelTable = (new WorkspaceModel())->getTable();
-                $userModelTable = (new UserModel())->getTable();
+            $filteredModule::addGlobalScope(
+                'workspaces',
+                function ($builder) use ($filteredModule, $workspaceUserModel) {
+                    $filteredModuleTable = (new $filteredModule)->getTable();
+                    $workspaceUserTable = (new $workspaceUserModel)->getTable();
+                    $workspaceModelTable = (new WorkspaceModel())->getTable();
+                    $userModelTable = (new UserModel())->getTable();
+                    $workspaceUserMap = config('bites.WORKSPACE.WORKSPACE_USER', []);
+                    $builder->select($filteredModuleTable . '.*');
 
-                $builder->select($filteredModuleTable . '.*');
+                    //Workspace Access To Model
+                    $builder->leftJoin(
+                        $workspaceUserTable,
+                        function ($join) use (
+                            $filteredModule,
+                            $workspaceUserTable,
+                            $filteredModuleTable,
+                            $workspaceUserMap
+                        ) {
+                            $join->on(
+                                $workspaceUserTable . '.' . $workspaceUserMap['WORKSPACE_COLUMN'] ?? 'workspace_id',
+                                $filteredModuleTable . '.workspace_id'
+                            );
+                        }
+                    );
 
-                //Workspace Access To Model
-                $builder->leftJoin(
-                    $workspaceTable,
-                    function ($join) use ($filteredModule, $workspaceTable, $filteredModuleTable) {
-                        $join->on(
-                            $workspaceTable . '.workspace_id',
-                            $filteredModuleTable . '.workspace_id'
-                        );
-                    }
-                );
+                    $builder->leftJoin(
+                        $workspaceModelTable,
+                        function ($join) use ($filteredModule, $workspaceModelTable, $filteredModuleTable) {
+                            $join->on(
+                                $workspaceModelTable . '.model_id',
+                                $filteredModuleTable . '.' . (new $filteredModule)->getKeyName()
+                            );
+                            $join->where($workspaceModelTable . '.model_type', $filteredModule);
+                        }
+                    );
 
-                $builder->leftJoin(
-                    $workspaceModelTable,
-                    function ($join) use ($filteredModule, $workspaceModelTable, $filteredModuleTable) {
-                        $join->on($workspaceModelTable.'.model_id', $filteredModuleTable . '.' . (new $filteredModule)->getKeyName());
-                        $join->where($workspaceModelTable.'.model_type',$filteredModule);
-                    }
-                );
-
-                //Specific User Access To Model
-                $builder->leftJoin(
-                    $userModelTable,
-                    function ($join) use ($filteredModule, $userModelTable, $filteredModuleTable) {
-                        $join->on($userModelTable.'.model_id', $filteredModuleTable . '.' . (new $filteredModule)->getKeyName());
-                        $join->on($userModelTable . '.b_user_id', DB::raw(auth()->user()?->id ?? 0));
-                        $join->where($userModelTable.'.model_type',$filteredModule);
-                    }
-                );
+                    //Specific User Access To Model
+                    $builder->leftJoin(
+                        $userModelTable,
+                        function ($join) use ($filteredModule, $userModelTable, $filteredModuleTable) {
+                            $join->on(
+                                $userModelTable . '.model_id',
+                                $filteredModuleTable . '.' . (new $filteredModule)->getKeyName()
+                            );
+                            $join->on($userModelTable . '.b_user_id', DB::raw(auth()->user()?->id ?? 0));
+                            $join->where($userModelTable . '.model_type', $filteredModule);
+                        }
+                    );
 
 
-                //Access By Current Workspace
-                $builder->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
-                //Public Access Workspace
-                $builder->orWhereNull($filteredModuleTable . '.workspace_id');
+                    //Access By Current Workspace
+                    $builder->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
+                    //Public Access Workspace
+                    $builder->orWhereNull($filteredModuleTable . '.workspace_id');
 
-                $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
-                //Access By User Inside Workspace
-                $builder->orWhere($workspaceTable . '.b_user_id', auth()->user()?->id ?? 0);
-                // //Specific User Access To Model
-                $builder->orWhere($userModelTable . '.b_user_id', auth()->user()?->id ?? 0);
-            });
+                    $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
+                    //Access By User Inside Workspace
+                    $builder->orWhere($workspaceUserTable . '.'.$workspaceUserMap['USER_COLUMN'] ?? 'b_user_id', auth()->user()?->id ?? 0);
+                    // //Specific User Access To Model
+                    $builder->orWhere($userModelTable . '.b_user_id', auth()->user()?->id ?? 0);
+                }
+            );
             Log::error($filteredModule::query()->toSql());
-            Log::error('User: '.auth()->user()?->id ?? 0);
-            Log::error('Workspace: '.request()->header('ACTIVE-WORKSPACE', 0));
+            Log::error('User: ' . auth()->user()?->id ?? 0);
+            Log::error('Workspace: ' . request()->header('ACTIVE-WORKSPACE', 0));
         }
     }
 
