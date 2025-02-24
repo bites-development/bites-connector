@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Observers;
 
+use Modules\BitesMiddleware\Events\WorkspaceCreated;
 use Modules\BitesMiddleware\Models\Workspace;
 use Modules\BitesMiddleware\Models\WorkspaceMasterDB;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
@@ -50,7 +51,7 @@ class DynamicWorkspaceObserver
                 $class->$key = $value;
             }
 
-            $class->saveQuietly();
+            event(new WorkspaceCreated($class->saveQuietly()));
         }
         $item->workspace_id = $workspaceId;
     }
