@@ -51,7 +51,8 @@ class DynamicWorkspaceObserver
                 $class->$key = $value;
             }
 
-            event(new WorkspaceCreated($class->saveQuietly()));
+            $class->saveQuietly();
+            event(new WorkspaceCreated($class->refresh()));
         }
         $item->workspace_id = $workspaceId;
     }
