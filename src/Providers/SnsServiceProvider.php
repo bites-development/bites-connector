@@ -6,7 +6,7 @@ namespace Modules\BitesMiddleware\Providers;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
-use Modules\BitesMiddleware\Events\WorkspaceCreated;
+use Modules\BitesMiddleware\Events\SnsMessageReceived;
 use Modules\BitesMiddleware\Listeners\WorkspaceListener;
 
 class SnsServiceProvider extends BaseServiceProvider
@@ -23,7 +23,7 @@ class SnsServiceProvider extends BaseServiceProvider
         $this->publishListener();
         $this->registerMigrations();
         $this->registerListeners();
-        Event::listen(WorkspaceCreated::class, WorkspaceListener::class);
+        Event::listen(SnsMessageReceived::class, WorkspaceListener::class);
     }
 
     public function register(): void

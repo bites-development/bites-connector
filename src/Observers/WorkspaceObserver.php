@@ -42,8 +42,7 @@ class WorkspaceObserver
         $workspace->id = $dbWorkspace->id;
         /** @var SnsService $snsService */
         $snsService = app()->make(SnsService::class);
-        $snsService->publish($dbWorkspace->toArray());
-
+        $snsService->publish(['type' => 'Workspace', 'workspace' => $dbWorkspace->toArray()]);
     }
 
     public function saved($workspace)

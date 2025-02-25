@@ -20,7 +20,7 @@ class WorkspaceListener
         if ($dto->message['type'] == 'Workspace') {
             $class = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS', Workspace::class);
             $masterClass = config('bites.WORKSPACE.MASTER_WORKSPACE_CLASS', WorkspaceMasterDB::class);
-            $workspaceId = $dto->message['id'];
+            $workspaceId = $dto->message['workspace']['id'];
             $workspace = $masterClass::find($workspaceId);
             if (empty($workspace)) {
                 throw new \RuntimeException('Workspace not exist');
