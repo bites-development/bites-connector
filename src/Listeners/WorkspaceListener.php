@@ -15,7 +15,7 @@ class WorkspaceListener
 
     public function handle($event)
     {
-        $message = $event->snsMessage;
+        $message = $event->workspace;
         $dto = SnsNotificationDTO::fromArray($message);
         if ($dto->message['type'] == 'Workspace') {
             $class = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS', Workspace::class);
