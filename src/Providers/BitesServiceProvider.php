@@ -7,7 +7,7 @@ namespace Modules\BitesMiddleware\Providers;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Modules\BitesMiddleware\Middleware\CheckAuthUser;
-use Modules\BitesMiddleware\Models\Workspace;
+use Modules\BitesMiddleware\Middleware\CheckWorkspace;
 
 class BitesServiceProvider extends ServiceProvider
 {
@@ -38,6 +38,7 @@ class BitesServiceProvider extends ServiceProvider
         $class = config('bites.CHECK_AUTH_PATH', CheckAuthUser::class);
         $kernel = $this->app->make(Kernel::class);
         $kernel->prependMiddleware($class);
+        $kernel->prependMiddleware(CheckWorkspace::class);
     }
 
     private function syncMorph($relationFunction,$data){
