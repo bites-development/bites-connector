@@ -16,7 +16,11 @@ class WorkspaceObserver
     public function saving($workspace)
     {
         $map = config('bites.WORKSPACE.WORKSPACE_COLUMN_MAP');
-        $dbWorkspace = WorkspaceMasterDB::query()->where('id', $workspace->id)->first();
+        if (!empty($workspace->id)) {
+            $dbWorkspace = WorkspaceMasterDB::query()->where('id', $workspace->id)->first();
+        } else {
+            $dbWorkspace = WorkspaceMasterDB::query()->where('slug', $workspace->slug)->first();
+        }
         $generateMapper = [];
         foreach ($map as $masterDBKey => $targetDBKey) {
             if (is_callable($targetDBKey)) {
