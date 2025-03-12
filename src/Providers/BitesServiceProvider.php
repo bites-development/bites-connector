@@ -38,7 +38,10 @@ class BitesServiceProvider extends ServiceProvider
         $class = config('bites.CHECK_AUTH_PATH', CheckAuthUser::class);
         $kernel = $this->app->make(Kernel::class);
         $kernel->prependMiddleware($class);
-        $kernel->prependMiddleware(CheckWorkspace::class);
+        $ignoreCheckWorkspace = config('bites.IGNORE_CHECK_WORKSPACE', false);
+        if(!$ignoreCheckWorkspace) {
+            $kernel->prependMiddleware(CheckWorkspace::class);
+        }
     }
 
     private function syncMorph($relationFunction,$data){
