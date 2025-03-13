@@ -39,7 +39,7 @@ class BitesServiceProvider extends ServiceProvider
         $kernel = $this->app->make(Kernel::class);
         $kernel->prependMiddleware($class);
         $ignoreCheckWorkspace = config('bites.IGNORE_CHECK_WORKSPACE', false);
-        if(!$ignoreCheckWorkspace && auth()->check()) {
+        if(!$ignoreCheckWorkspace) {
             $kernel->prependMiddleware(CheckWorkspace::class);
         }
     }

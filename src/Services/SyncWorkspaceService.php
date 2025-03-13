@@ -13,7 +13,7 @@ class SyncWorkspaceService
     public function sync()
     {
         if (empty(request()->header('ACTIVE-WORKSPACE'))) {
-            throw new \RuntimeException('You have to pass workspace');
+            return;
         }
         $workspaceId = request()->header('ACTIVE-WORKSPACE');
         $class = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS', Workspace::class);
