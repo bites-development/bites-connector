@@ -44,7 +44,7 @@ return [
             'slug' => 'slug',
         ],
         'FILTERED_MODULES'=>[
-            \App\Models\Posts::class,
+            // \App\Models\Posts::class,
         ],
     ]
 ];
