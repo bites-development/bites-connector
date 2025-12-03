@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Providers;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -33,6 +34,7 @@ class WorkspaceServiceProvider extends ServiceProvider
         $this->assignDynamicObserver();
         $this->applyRelations();
         $this->applyGlobalScope();
+        $this->registerBuilderMacros();
     }
 
     private function mergeConfig()
@@ -159,6 +161,37 @@ class WorkspaceServiceProvider extends ServiceProvider
             }
             Cache::forever(md5($table . 'workspace_id'), true);
         }
+    }
+
+    private function registerBuilderMacros()
+    {
+        $prefixColumn = function (Builder $builder, $column) {
+            if ($column === '*' || str_contains($column, '.')) {
+                return $column;
+            }
+            return $builder->getModel()->getTable() . '.' . $column;
+        };
+
+        Builder::macro('count', function ($columns = '*') use ($prefixColumn) {
+            $prefixedColumns = $prefixColumn($this, $columns);
+            return $this->toBase()->count($prefixedColumns);
+        });
+
+        Builder::macro('sum', function ($column) use ($prefixColumn) {
+            return $this->toBase()->sum($prefixColumn($this, $column));
+        });
+
+        Builder::macro('avg', function ($column) use ($prefixColumn) {
+            return $this->toBase()->avg($prefixColumn($this, $column));
+        });
+
+        Builder::macro('min', function ($column) use ($prefixColumn) {
+            return $this->toBase()->min($prefixColumn($this, $column));
+        });
+
+        Builder::macro('max', function ($column) use ($prefixColumn) {
+            return $this->toBase()->max($prefixColumn($this, $column));
+        });
     }
 
 }
