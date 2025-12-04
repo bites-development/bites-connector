@@ -173,8 +173,35 @@ class WorkspaceServiceProvider extends ServiceProvider
         };
 
         Builder::macro('count', function ($columns = '*') use ($prefixColumn) {
-            $prefixedColumns = $prefixColumn($this, $columns);
-            return $this->toBase()->count($prefixedColumns);
+            if (is_array($columns)) {
+                $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+                return $this->toBase()->count($prefixedColumns[0] ?? '*');
+            }
+            return $this->toBase()->count($prefixColumn($this, $columns));
+        });
+
+        Builder::macro('getCountForPagination', function ($columns = ['*']) use ($prefixColumn) {
+            $columns = is_array($columns) ? $columns : [$columns];
+            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+            return $this->toBase()->getCountForPagination($prefixedColumns);
+        });
+
+        Builder::macro('paginate', function ($perPage = null, $columns = ['*'], $pageName = 'page', $page = null) use ($prefixColumn) {
+            $columns = is_array($columns) ? $columns : [$columns];
+            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+
+            $page = $page ?: \Illuminate\Pagination\Paginator::resolveCurrentPage($pageName);
+            $perPage = $perPage ?: $this->model->getPerPage();
+
+            $total = $this->toBase()->getCountForPagination($prefixedColumns);
+            $results = $total
+                ? $this->forPage($page, $perPage)->get($columns)
+                : $this->model->newCollection();
+
+            return $this->paginator($results, $total, $perPage, $page, [
+                'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
+            ]);
         });
 
         Builder::macro('sum', function ($column) use ($prefixColumn) {
