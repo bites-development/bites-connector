@@ -10,6 +10,8 @@ use Modules\BitesMiddleware\Models\WorkspaceUser;
 return [
     'name' => 'Bite Middleware',
     'CHECK_AUTH_PATH' => CheckAuthUser::class,
+    //'IGNORE_WORKSPACE_ROLES' => ['admin', 'manager'],
+    //'IGNORE_WORKSPACE_ROUTES' => ['api/v1/dashboard/admin/*'],
     'WORKSPACE' => [
         'MAIN_WORKSPACE_CLASS' => Workspace::class,
         'MASTER_WORKSPACE_CLASS' => WorkspaceMasterDB::class,
