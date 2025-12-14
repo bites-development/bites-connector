@@ -18,7 +18,6 @@ use Modules\BitesMiddleware\Models\WorkspaceModel;
 use Modules\BitesMiddleware\Models\WorkspaceUser;
 use Modules\BitesMiddleware\Observers\DynamicWorkspaceObserver;
 use Modules\BitesMiddleware\Observers\WorkspaceObserver;
-use Modules\BitesMiddleware\Scopes\QualifyColumnsScope;
 
 class WorkspaceServiceProvider extends ServiceProvider
 {
@@ -40,15 +39,42 @@ class WorkspaceServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register a scope to fix ambiguous 'id' columns in WHERE clauses
-     * when JOINs are present from the workspace global scope.
+     * Register custom Query Builder that automatically qualifies 'id' columns.
+     * This works by replacing the default MySQL connection with our custom one.
      */
     private function registerQueryRewriter()
     {
         $filteredModules = config('bites.WORKSPACE.FILTERED_MODULES', []);
+        $tables = [];
         
         foreach ($filteredModules as $filteredModule) {
-            $filteredModule::addGlobalScope('qualifyColumns', new QualifyColumnsScope());
+            $model = new $filteredModule;
+            $tables[$model->getTable()] = $model->getKeyName();
+        }
+
+        // Store tables in the custom query builder
+        \Modules\BitesMiddleware\Database\WorkspaceQueryBuilder::$workspaceTables = $tables;
+        
+        // Register custom MySQL connection resolver
+        \Illuminate\Database\Connection::resolverFor('mysql', function ($connection, $database, $prefix, $config) {
+            return new \Modules\BitesMiddleware\Database\WorkspaceMySqlConnection(
+                $connection,
+                $database,
+                $prefix,
+                $config
+            );
+        });
+        
+        // Reconnect to apply the new connection class
+        // Only do this if we have filtered modules
+        if (!empty($tables)) {
+            try {
+                DB::purge('mysql');
+                DB::reconnect('mysql');
+            } catch (\Exception $e) {
+                // Connection might not be established yet, that's OK
+                // The resolver will be used when connection is first made
+            }
         }
     }
 
