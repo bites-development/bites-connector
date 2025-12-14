@@ -172,6 +172,26 @@ class WorkspaceServiceProvider extends ServiceProvider
             return $builder->getModel()->getTable() . '.' . $column;
         };
 
+        Builder::macro('find', function ($id, $columns = ['*']) use ($prefixColumn) {
+            $columns = is_array($columns) ? $columns : [$columns];
+            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+            $keyName = $prefixColumn($this, $this->model->getKeyName());
+            return $this->where($keyName, '=', $id)->first($prefixedColumns);
+        });
+
+        Builder::macro('findOrFail', function ($id, $columns = ['*']) use ($prefixColumn) {
+            $columns = is_array($columns) ? $columns : [$columns];
+            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+            $keyName = $prefixColumn($this, $this->model->getKeyName());
+            $result = $this->where($keyName, '=', $id)->first($prefixedColumns);
+            if (is_null($result)) {
+                throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(
+                    get_class($this->model), $id
+                );
+            }
+            return $result;
+        });
+
         Builder::macro('count', function ($columns = '*') use ($prefixColumn) {
             if (is_array($columns)) {
                 $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
