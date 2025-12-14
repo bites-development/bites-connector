@@ -36,6 +36,9 @@ class WorkspaceObserver
                 }
             }
         }
+        if(!$dbWorkspace) {
+            $dbWorkspace = WorkspaceMasterDB::query()->where('slug', $generateMapper['slug'])->first();
+        }
 
         if ($dbWorkspace) {
             $dbWorkspace->update($generateMapper);
