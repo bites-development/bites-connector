@@ -18,6 +18,7 @@ use Modules\BitesMiddleware\Models\WorkspaceModel;
 use Modules\BitesMiddleware\Models\WorkspaceUser;
 use Modules\BitesMiddleware\Observers\DynamicWorkspaceObserver;
 use Modules\BitesMiddleware\Observers\WorkspaceObserver;
+use Modules\BitesMiddleware\Scopes\QualifyColumnsScope;
 
 class WorkspaceServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,20 @@ class WorkspaceServiceProvider extends ServiceProvider
         $this->applyRelations();
         $this->applyGlobalScope();
         $this->registerBuilderMacros();
+        $this->registerQueryRewriter();
+    }
+
+    /**
+     * Register a scope to fix ambiguous 'id' columns in WHERE clauses
+     * when JOINs are present from the workspace global scope.
+     */
+    private function registerQueryRewriter()
+    {
+        $filteredModules = config('bites.WORKSPACE.FILTERED_MODULES', []);
+        
+        foreach ($filteredModules as $filteredModule) {
+            $filteredModule::addGlobalScope('qualifyColumns', new QualifyColumnsScope());
+        }
     }
 
     private function mergeConfig()
@@ -172,25 +187,8 @@ class WorkspaceServiceProvider extends ServiceProvider
             return $builder->getModel()->getTable() . '.' . $column;
         };
 
-        Builder::macro('find', function ($id, $columns = ['*']) use ($prefixColumn) {
-            $columns = is_array($columns) ? $columns : [$columns];
-            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
-            $keyName = $prefixColumn($this, $this->model->getKeyName());
-            return $this->where($keyName, '=', $id)->first($prefixedColumns);
-        });
-
-        Builder::macro('findOrFail', function ($id, $columns = ['*']) use ($prefixColumn) {
-            $columns = is_array($columns) ? $columns : [$columns];
-            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
-            $keyName = $prefixColumn($this, $this->model->getKeyName());
-            $result = $this->where($keyName, '=', $id)->first($prefixedColumns);
-            if (is_null($result)) {
-                throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(
-                    get_class($this->model), $id
-                );
-            }
-            return $result;
-        });
+        // Note: find(), findOrFail(), whereKey(), where('id', ...) are all handled
+        // by QualifyColumnsScope which rewrites 'id' to 'table.id' before query execution
 
         Builder::macro('count', function ($columns = '*') use ($prefixColumn) {
             if (is_array($columns)) {
