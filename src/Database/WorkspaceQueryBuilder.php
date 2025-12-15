@@ -82,7 +82,8 @@ class WorkspaceQueryBuilder extends Builder
      */
     protected function qualifyAmbiguousColumns(): void
     {
-        if (!isset(self::$workspaceTables[$this->from])) {
+        // $this->from can be null or an Expression object, not just a string
+        if (!is_string($this->from) || !isset(self::$workspaceTables[$this->from])) {
             return;
         }
 
