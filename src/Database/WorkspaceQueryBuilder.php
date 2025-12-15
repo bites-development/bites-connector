@@ -97,6 +97,10 @@ class WorkspaceQueryBuilder extends Builder
         // Build list of columns to qualify
         $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
 
+        // Qualify columns in SELECT clause
+        $this->qualifySelectColumns($table, $columnsToQualify);
+
+        // Qualify columns in WHERE clause
         foreach ($this->wheres as $index => $where) {
             // Handle standard column references
             if (isset($where['column']) && is_string($where['column'])) {
@@ -115,6 +119,32 @@ class WorkspaceQueryBuilder extends Builder
             // Handle 'value' key which may contain Expression objects or raw SQL
             if (isset($where['value']) && is_string($where['value'])) {
                 $this->wheres[$index]['value'] = $this->qualifyColumnsInSql($where['value'], $table, $columnsToQualify);
+            }
+        }
+    }
+
+    /**
+     * Qualify ambiguous columns in the SELECT clause.
+     */
+    protected function qualifySelectColumns(string $table, array $columnsToQualify): void
+    {
+        if (empty($this->columns)) {
+            return;
+        }
+
+        foreach ($this->columns as $index => $column) {
+            // Skip if already qualified, is *, or is an Expression
+            if (!is_string($column)) {
+                continue;
+            }
+            
+            if ($column === '*' || str_contains($column, '.') || str_contains($column, '(')) {
+                continue;
+            }
+
+            // Qualify if it's an ambiguous column
+            if (in_array($column, $columnsToQualify, true)) {
+                $this->columns[$index] = $table . '.' . $column;
             }
         }
     }
