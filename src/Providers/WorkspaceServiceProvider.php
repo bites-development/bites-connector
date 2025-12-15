@@ -18,6 +18,7 @@ use Modules\BitesMiddleware\Models\WorkspaceModel;
 use Modules\BitesMiddleware\Models\WorkspaceUser;
 use Modules\BitesMiddleware\Observers\DynamicWorkspaceObserver;
 use Modules\BitesMiddleware\Observers\WorkspaceObserver;
+use Modules\BitesMiddleware\Services\WorkspaceAccessService;
 
 class WorkspaceServiceProvider extends ServiceProvider
 {
@@ -109,6 +110,12 @@ class WorkspaceServiceProvider extends ServiceProvider
             $filteredModule::addGlobalScope(
                 'workspaces',
                 function ($builder) use ($filteredModule, $workspaceUserModel) {
+                    // Check if workspace filtering should be ignored for this request
+                    $workspaceAccess = app(WorkspaceAccessService::class);
+                    if ($workspaceAccess->shouldIgnoreWorkspace()) {
+                        return;
+                    }
+                    
                     $filteredModuleTable = (new $filteredModule)->getTable();
                     $workspaceUserTable = (new $workspaceUserModel)->getTable();
                     $workspaceModelTable = (new WorkspaceModel())->getTable();
@@ -163,16 +170,26 @@ class WorkspaceServiceProvider extends ServiceProvider
                     );
 
 
-                    //Access By Current Workspace
-                    $builder->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
-                    //Public Access Workspace
-                    $builder->orWhereNull($filteredModuleTable . '.workspace_id');
+                    // Group all workspace access conditions together
+                    // This prevents OR conditions from interfering with other query conditions
+                    $builder->where(function ($query) use (
+                        $filteredModuleTable,
+                        $workspaceModelTable,
+                        $workspaceUserTable,
+                        $userModelTable,
+                        $workspaceUserMap
+                    ) {
+                        //Access By Current Workspace
+                        $query->where($filteredModuleTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
+                        //Public Access Workspace
+                        $query->orWhereNull($filteredModuleTable . '.workspace_id');
 
-                    $builder->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
-                    //Access By User Inside Workspace
-                    $builder->orWhere($workspaceUserTable . '.'.( $workspaceUserMap['USER_COLUMN'] ?? 'b_user_id' ), auth()->user()?->id ?? 0);
-                    // //Specific User Access To Model
-                    $builder->orWhere($userModelTable . '.b_user_id', auth()->user()?->id ?? 0);
+                        $query->orWhere($workspaceModelTable . '.workspace_id', request()->header('ACTIVE-WORKSPACE', 0));
+                        //Access By User Inside Workspace
+                        $query->orWhere($workspaceUserTable . '.'.( $workspaceUserMap['USER_COLUMN'] ?? 'b_user_id' ), auth()->user()?->id ?? 0);
+                        // //Specific User Access To Model
+                        $query->orWhere($userModelTable . '.b_user_id', auth()->user()?->id ?? 0);
+                    });
                 }
             );
             Log::error($filteredModule::query()->toSql());

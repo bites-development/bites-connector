@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\BitesMiddleware\Observers;
 
+use Modules\BitesMiddleware\Services\WorkspaceAccessService;
 use Modules\BitesMiddleware\Shared\UseMiddlewareDBTrait;
 
 class DynamicWorkspaceObserver
 {
     use UseMiddlewareDBTrait;
 
+    protected WorkspaceAccessService $workspaceAccess;
+
+    public function __construct()
+    {
+        $this->workspaceAccess = app(WorkspaceAccessService::class);
+    }
+
     public function saving($item)
     {
-        if ($this->shouldIgnoreWorkspace()) {
+        if ($this->workspaceAccess->shouldIgnoreWorkspace()) {
             return;
         }
 
@@ -25,37 +33,11 @@ class DynamicWorkspaceObserver
 
     public function saved($item)
     {
-        if ($this->shouldIgnoreWorkspace()) {
+        if ($this->workspaceAccess->shouldIgnoreWorkspace()) {
             return;
         }
 
         $item->workspaceMaster()->delete();
         $item->workspaceMaster()->create(['workspace_id' => $item->workspace_id]);
     }
-
-    protected function shouldIgnoreWorkspace(): bool
-    {
-        $ignoreRoutes = config('bites.IGNORE_WORKSPACE_ROUTES', []);
-        if (request()->is($ignoreRoutes)) {
-            return true;
-        }
-
-        $user = auth()->user();
-        if (!$user) {
-            return false;
-        }
-
-        $ignoreRoles = config('bites.IGNORE_WORKSPACE_ROLES', []);
-        
-        if (method_exists($user, 'hasRole')) {
-            return $user->hasRole($ignoreRoles);
-        }
-
-        if (isset($user->role) && in_array($user->role, $ignoreRoles)) {
-            return true;
-        }
-
-        return false;
-    }
-
 }
