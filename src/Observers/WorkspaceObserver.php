@@ -57,13 +57,14 @@ class WorkspaceObserver
                 }
             }
 
-            $dbWorkspace = null;
+
             // Ensure slug is unique in master DB
             if (!empty($generateMapper['slug']) && !$workspace->exists) {
                 $generateMapper['slug'] = ($generateMapper['slug'].'-'.($generateMapper['b_user_id'] ?? auth()->user()->id));
                 $workspace->slug = $generateMapper['slug'];
             }
 
+            $dbWorkspace = WorkspaceMasterDB::where('slug',$generateMapper['slug'])->first();
             if ($dbWorkspace) {
                 $dbWorkspace->update($generateMapper);
             } else {
