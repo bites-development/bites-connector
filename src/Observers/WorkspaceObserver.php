@@ -57,6 +57,12 @@ class WorkspaceObserver
                 }
             }
             
+            // Ensure slug is unique in master DB
+            if (!empty($generateMapper['slug'])) {
+                $generateMapper['slug'] = $this->ensureUniqueSlug($generateMapper['slug'], $workspace->id ?? null);
+                $workspace->slug = $generateMapper['slug'];
+            }
+            
             // Find existing workspace in master DB
             // IMPORTANT: Prioritize slug lookup to avoid ID collision between local DB and master DB
             // Local DB might have workspace ID=5, but master DB ID=5 is a completely different workspace
@@ -102,7 +108,24 @@ class WorkspaceObserver
             // CRITICAL: Sync the ID from master DB to local workspace
             // This ensures all projects use the same workspace ID
             if ($workspace && $dbWorkspace) {
-                $workspace->id = $dbWorkspace->id;
+                $masterDbId = $dbWorkspace->id;
+                
+                // Check if this ID already exists in local DB with a different slug
+                // This prevents "Duplicate entry" errors when master DB ID conflicts with local DB
+                $localWorkspaceClass = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS');
+                $localExisting = $localWorkspaceClass::withoutGlobalScopes()
+                    ->where('id', $masterDbId)
+                    ->first();
+                
+                if ($localExisting && $localExisting->slug !== ($generateMapper['slug'] ?? $workspace->slug)) {
+                    // Local DB has a different workspace with this ID
+                    // We need to use updateOrCreate to handle this properly
+                    // Don't set the ID - let local DB auto-increment
+                    // The slug will be the link between local and master DB
+                } else {
+                    // Safe to use master DB ID
+                    $workspace->id = $masterDbId;
+                }
             }
             
             // Store the workspace id to prevent duplicate processing
@@ -129,5 +152,51 @@ class WorkspaceObserver
     public function saved($workspace)
     {
         event(new WorkspaceCreated($workspace));
+    }
+
+    /**
+     * Ensure the slug is unique in the master DB.
+     * If duplicate exists, append user ID or incrementing number.
+     */
+    protected function ensureUniqueSlug(string $slug, ?int $existingId = null): string
+    {
+        $originalSlug = $slug;
+        $counter = 1;
+        
+        // Build query to check for existing slugs
+        $query = WorkspaceMasterDB::query()->where('slug', $slug);
+        
+        // Exclude current workspace if updating
+        if ($existingId) {
+            $query->where('id', '!=', $existingId);
+        }
+        
+        // If slug exists, try appending user ID first
+        if ($query->exists()) {
+            $userId = auth()->user()?->id;
+            if ($userId) {
+                $slugWithUserId = $originalSlug . '-' . $userId;
+                $existsWithUserId = WorkspaceMasterDB::query()
+                    ->where('slug', $slugWithUserId)
+                    ->when($existingId, fn($q) => $q->where('id', '!=', $existingId))
+                    ->exists();
+                
+                if (!$existsWithUserId) {
+                    return $slugWithUserId;
+                }
+            }
+            
+            // Fallback: append incrementing number until unique
+            do {
+                $slug = $originalSlug . '-' . $counter;
+                $exists = WorkspaceMasterDB::query()
+                    ->where('slug', $slug)
+                    ->when($existingId, fn($q) => $q->where('id', '!=', $existingId))
+                    ->exists();
+                $counter++;
+            } while ($exists && $counter < 100);
+        }
+        
+        return $slug;
     }
 }
