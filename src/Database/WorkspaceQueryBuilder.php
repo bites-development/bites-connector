@@ -7,16 +7,28 @@ namespace Modules\BitesMiddleware\Database;
 use Illuminate\Database\Query\Builder;
 
 /**
- * Custom Query Builder that automatically qualifies ambiguous 'id' columns
+ * Custom Query Builder that automatically qualifies ambiguous columns
  * before query execution.
  */
 class WorkspaceQueryBuilder extends Builder
 {
     /**
-     * Tables that need id column qualification.
+     * Tables that need column qualification.
      * Set by WorkspaceServiceProvider.
      */
     public static array $workspaceTables = [];
+
+    /**
+     * Common columns that may be ambiguous when joining workspace tables.
+     */
+    protected static array $ambiguousColumns = [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'status',
+        'workspace_id',
+    ];
 
     /**
      * Run the query as a "select" statement against the connection.
@@ -66,25 +78,66 @@ class WorkspaceQueryBuilder extends Builder
     }
 
     /**
-     * Qualify ambiguous 'id' columns with table name.
+     * Qualify ambiguous columns with table name when joins are present.
      */
-    protected function qualifyIdColumns(): void
+    protected function qualifyAmbiguousColumns(): void
     {
         if (!isset(self::$workspaceTables[$this->from])) {
+            return;
+        }
+
+        // Only qualify if there are joins (which cause ambiguity)
+        if (empty($this->joins)) {
             return;
         }
 
         $table = $this->from;
         $keyName = self::$workspaceTables[$table];
 
+        // Build list of columns to qualify
+        $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
+
         foreach ($this->wheres as $index => $where) {
+            // Handle standard column references
             if (isset($where['column']) && is_string($where['column'])) {
                 $column = $where['column'];
-                // If column is 'id' or the model's key without table prefix, qualify it
-                if (($column === 'id' || $column === $keyName) && !str_contains($column, '.')) {
+                // If column needs qualification and doesn't have table prefix, qualify it
+                if (in_array($column, $columnsToQualify, true) && !str_contains($column, '.')) {
                     $this->wheres[$index]['column'] = $table . '.' . $column;
                 }
             }
+
+            // Handle raw SQL in 'sql' key (used by whereRaw)
+            if (isset($where['sql']) && is_string($where['sql'])) {
+                $this->wheres[$index]['sql'] = $this->qualifyColumnsInSql($where['sql'], $table, $columnsToQualify);
+            }
+
+            // Handle 'value' key which may contain Expression objects or raw SQL
+            if (isset($where['value']) && is_string($where['value'])) {
+                $this->wheres[$index]['value'] = $this->qualifyColumnsInSql($where['value'], $table, $columnsToQualify);
+            }
         }
+    }
+
+    /**
+     * Qualify column names within a SQL string.
+     */
+    protected function qualifyColumnsInSql(string $sql, string $table, array $columns): string
+    {
+        foreach ($columns as $col) {
+
+            $pattern = '/(?<![.\w`])(' . preg_quote($col, '/') . ')(?![.\w])/';
+            $replacement = $table . '.$1';
+            $sql = preg_replace($pattern, $replacement, $sql);
+        }
+        return $sql;
+    }
+
+    /**
+     * @deprecated Use qualifyAmbiguousColumns() instead
+     */
+    protected function qualifyIdColumns(): void
+    {
+        $this->qualifyAmbiguousColumns();
     }
 }

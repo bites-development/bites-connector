@@ -114,7 +114,13 @@ class WorkspaceServiceProvider extends ServiceProvider
                     $workspaceModelTable = (new WorkspaceModel())->getTable();
                     $userModelTable = (new UserModel())->getTable();
                     $workspaceUserMap = config('bites.WORKSPACE.WORKSPACE_USER', []);
-                    $builder->select($filteredModuleTable . '.*');
+                    
+                    // Only set select for main queries, not subqueries (withCount, etc.)
+                    // Check if columns are already set (subqueries have specific columns)
+                    $query = $builder->getQuery();
+                    if (empty($query->columns)) {
+                        $builder->select($filteredModuleTable . '.*');
+                    }
 
                     //Workspace Access To Model
                     $builder->leftJoin(
