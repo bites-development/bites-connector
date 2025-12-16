@@ -68,7 +68,7 @@ class WorkspaceObserver
             if ($dbWorkspace) {
                 $dbWorkspace->update($generateMapper);
             } else {
-                $dbWorkspace = WorkspaceMasterDB::query()->create($generateMapper);
+                $dbWorkspace = WorkspaceMasterDB::query()->firstOrCreate($generateMapper);
             }
 
             // CRITICAL: Sync the ID from master DB to local workspace
@@ -81,7 +81,7 @@ class WorkspaceObserver
             self::$processingWorkspaces[$workspaceKey] = $dbWorkspace->id;
 
             // Publish to SNS if enabled
-            if (config('bites.SNS_ENABLED', true)) {
+            if (config('bites.SNS_ENABLED', false)) {
                 /** @var SnsService $snsService */
                 $snsService = app()->make(SnsService::class);
                 $snsService->publish(['type' => 'Workspace', 'workspace' => $dbWorkspace->toArray()]);
