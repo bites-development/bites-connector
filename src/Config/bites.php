@@ -10,6 +10,15 @@ use Modules\BitesMiddleware\Models\WorkspaceUser;
 return [
     'name' => 'Bite Middleware',
     'CHECK_AUTH_PATH' => CheckAuthUser::class,
+    
+    // Enable/disable SNS publishing for workspace events
+    'SNS_ENABLED' => env('BITES_SNS_ENABLED', true),
+
+    // Push Notification API Configuration
+    'push' => [
+        'base_url' => env('BITES_PUSH_API_URL', 'https://api.bites.com'),
+        'api_key' => env('BITES_PUSH_API_KEY'),
+    ],
     //'IGNORE_WORKSPACE_ROLES' => ['admin', 'manager'],
     //'IGNORE_WORKSPACE_ROUTES' => ['api/v1/dashboard/admin/*'],
     'WORKSPACE' => [

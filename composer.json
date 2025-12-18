@@ -11,7 +11,8 @@
       "providers": [
         "Modules\\BitesMiddleware\\Providers\\BitesServiceProvider",
         "Modules\\BitesMiddleware\\Providers\\WorkspaceServiceProvider",
-        "Modules\\BitesMiddleware\\Providers\\SnsServiceProvider"
+        "Modules\\BitesMiddleware\\Providers\\SnsServiceProvider",
+        "Modules\\BitesMiddleware\\Providers\\BitesPushServiceProvider"
       ]
     }
   },
