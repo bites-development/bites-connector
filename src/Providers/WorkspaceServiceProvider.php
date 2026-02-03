@@ -286,6 +286,12 @@ class WorkspaceServiceProvider extends ServiceProvider
         Builder::macro('max', function ($column) use ($prefixColumn) {
             return $this->toBase()->max($prefixColumn($this, $column));
         });
+
+        Builder::macro('select', function ($columns = ['*']) use ($prefixColumn) {
+            $columns = is_array($columns) ? $columns : func_get_args();
+            $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
+            return $this->toBase()->select($prefixedColumns);
+        });
     }
 
 }

@@ -10,9 +10,9 @@ use Modules\BitesMiddleware\Models\WorkspaceUser;
 return [
     'name' => 'Bite Middleware',
     'CHECK_AUTH_PATH' => CheckAuthUser::class,
-    
+
     // Enable/disable SNS publishing for workspace events
-    'SNS_ENABLED' => env('BITES_SNS_ENABLED', true),
+    'SNS_ENABLED' => env('BITES_SNS_ENABLED', false),
 
     // Push Notification API Configuration
     'push' => [
