@@ -47,9 +47,8 @@ fi
 # Create new tag
 echo -e "${BLUE}✨ Creating tag ${YELLOW}${TAG_VERSION}${NC}"
 git tag -a "${TAG_VERSION}" -m "Laravel  v2.0.0
-
 Features:
-- Link All Bites Projects
+- Link All Bites Projects"
 
 # Push to remote
 echo ""
