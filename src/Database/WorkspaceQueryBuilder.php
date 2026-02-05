@@ -84,16 +84,18 @@ class WorkspaceQueryBuilder extends Builder
 
     /**
      * Qualify ambiguous columns with table name when joins are present.
+     * 
+     * IMPORTANT: We only qualify WHERE clause columns, NOT SELECT columns.
+     * This is because SELECT columns might come from joined tables and we can't
+     * reliably determine which table they belong to without schema inspection.
+     * 
+     * WHERE clause qualification is safe because it only affects filtering logic,
+     * and Laravel's query builder already handles most WHERE clauses correctly.
      */
     protected function qualifyAmbiguousColumns(): void
     {
-        // Skip if workspaceTables is empty (not configured yet)
-        if (empty(self::$workspaceTables)) {
-            return;
-        }
-
         // $this->from can be null or an Expression object, not just a string
-        if (!is_string($this->from) || !isset(self::$workspaceTables[$this->from])) {
+        if (!is_string($this->from)) {
             return;
         }
 
@@ -102,16 +104,23 @@ class WorkspaceQueryBuilder extends Builder
             return;
         }
 
+        // Only qualify for workspace tables where we know the schema
+        // For other tables, trust Laravel's query builder to handle it correctly
+        if (!isset(self::$workspaceTables[$this->from])) {
+            return;
+        }
+
         $table = $this->from;
         $keyName = self::$workspaceTables[$table];
 
-        // Build list of columns to qualify
+        // Build list of columns to qualify - only common ambiguous columns
+        // We use a conservative list to avoid qualifying columns from joined tables
         $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
 
-        // Qualify columns in SELECT clause
+        // DO NOT qualify SELECT clause - see qualifySelectColumns() comment
         $this->qualifySelectColumns($table, $columnsToQualify);
 
-        // Qualify columns in WHERE clause
+        // Qualify columns in WHERE clause ONLY
         foreach ($this->wheres as $index => $where) {
             // Handle standard column references
             if (isset($where['column']) && is_string($where['column'])) {
