@@ -230,7 +230,7 @@ class WorkspaceServiceProvider extends ServiceProvider
     private function registerBuilderMacros()
     {
         $prefixColumn = function (Builder $builder, $column) {
-            if ($column === '*' || str_contains($column, '.')) {
+            if (!is_string($column) || $column === '*' || str_contains($column, '.')) {
                 return $column;
             }
             return $builder->getModel()->getTable() . '.' . $column;
