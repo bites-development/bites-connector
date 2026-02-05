@@ -136,28 +136,17 @@ class WorkspaceQueryBuilder extends Builder
 
     /**
      * Qualify ambiguous columns in the SELECT clause.
+     * 
+     * NOTE: We intentionally DO NOT qualify SELECT columns because:
+     * 1. Laravel's query builder already handles column selection properly
+     * 2. Qualifying SELECT columns can break queries with joins where columns come from different tables
+     * 3. The main ambiguity issue is in WHERE clauses, not SELECT clauses
      */
     protected function qualifySelectColumns(string $table, array $columnsToQualify): void
     {
-        if (empty($this->columns)) {
-            return;
-        }
-
-        foreach ($this->columns as $index => $column) {
-            // Skip if already qualified, is *, or is an Expression
-            if (!is_string($column)) {
-                continue;
-            }
-
-            if ($column === '*' || str_contains($column, '.') || str_contains($column, '(')) {
-                continue;
-            }
-
-            // Qualify if it's an ambiguous column
-            if (in_array($column, $columnsToQualify, true)) {
-                $this->columns[$index] = $table . '.' . $column;
-            }
-        }
+        // Intentionally left empty - do not qualify SELECT columns
+        // This prevents breaking queries like permissions joins where columns come from multiple tables
+        return;
     }
 
     /**
