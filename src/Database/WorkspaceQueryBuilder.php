@@ -37,7 +37,12 @@ class WorkspaceQueryBuilder extends Builder
      */
     protected function runSelect()
     {
-        $this->qualifyIdColumns();
+        try {
+            $this->qualifyAmbiguousColumns();
+        } catch (\Exception $e) {
+            // If qualification fails, continue without it
+            // This prevents breaking queries on non-workspace tables
+        }
         return parent::runSelect();
     }
 
@@ -82,6 +87,11 @@ class WorkspaceQueryBuilder extends Builder
      */
     protected function qualifyAmbiguousColumns(): void
     {
+        // Skip if workspaceTables is empty (not configured yet)
+        if (empty(self::$workspaceTables)) {
+            return;
+        }
+
         // $this->from can be null or an Expression object, not just a string
         if (!is_string($this->from) || !isset(self::$workspaceTables[$this->from])) {
             return;
@@ -138,7 +148,7 @@ class WorkspaceQueryBuilder extends Builder
             if (!is_string($column)) {
                 continue;
             }
-            
+
             if ($column === '*' || str_contains($column, '.') || str_contains($column, '(')) {
                 continue;
             }
