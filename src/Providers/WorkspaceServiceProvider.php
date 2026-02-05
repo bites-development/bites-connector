@@ -124,8 +124,9 @@ class WorkspaceServiceProvider extends ServiceProvider
                     
                     // Only set select for main queries, not subqueries (withCount, etc.)
                     // Check if columns are already set (subqueries have specific columns)
+                    // Also check if joins already exist to avoid breaking model hydration
                     $query = $builder->getQuery();
-                    if (empty($query->columns)) {
+                    if (empty($query->columns) && empty($query->joins)) {
                         $builder->select($filteredModuleTable . '.*');
                     }
 
