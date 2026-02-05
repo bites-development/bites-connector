@@ -283,10 +283,21 @@ class WorkspaceServiceProvider extends ServiceProvider
             return $this->toBase()->max($prefixColumn($this, $column));
         });
 
-        Builder::macro('select', function ($columns = ['*']) use ($prefixColumn) {
-            $columns = is_array($columns) ? $columns : func_get_args();
+        // Override select to automatically prefix columns
+        Builder::macro('select', function (...$columns) use ($prefixColumn) {
+            // Handle both select(['col1', 'col2']) and select('col1', 'col2')
+            if (count($columns) === 1 && is_array($columns[0])) {
+                $columns = $columns[0];
+            }
+            
             $prefixedColumns = array_map(fn($col) => $prefixColumn($this, $col), $columns);
-            return $this->toBase()->select($prefixedColumns);
+            
+            // Set columns on the underlying query builder using reflection
+            // to maintain Eloquent Builder chain
+            $queryBuilder = $this->toBase();
+            $queryBuilder->columns = $prefixedColumns;
+            
+            return $this;
         });
     }
 
