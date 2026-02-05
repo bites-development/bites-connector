@@ -122,14 +122,9 @@ class WorkspaceServiceProvider extends ServiceProvider
                     $userModelTable = (new UserModel())->getTable();
                     $workspaceUserMap = config('bites.WORKSPACE.WORKSPACE_USER', []);
                     
-                    // Only set select for main queries, not subqueries (withCount, etc.)
-                    // Check if columns are already set (subqueries have specific columns)
-                    // Also check if joins already exist to avoid breaking model hydration
-                    $query = $builder->getQuery();
-                    if (empty($query->columns) && empty($query->joins)) {
-                        $builder->select($filteredModuleTable . '.*');
-                    }
-
+                    // Don't add select() - it breaks model hydration when joins are present
+                    // Laravel's Eloquent will automatically handle column selection and model hydration
+                    
                     //Workspace Access To Model
                     $builder->leftJoin(
                         $workspaceUserTable,
