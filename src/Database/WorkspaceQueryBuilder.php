@@ -31,17 +31,44 @@ class WorkspaceQueryBuilder extends Builder
     ];
 
     /**
+     * Get the SQL representation of the query.
+     *
+     * @return string
+     */
+    public function toSql()
+    {
+        // Qualify columns before generating SQL
+        try {
+            $this->qualifyAmbiguousColumns();
+        } catch (\Throwable $e) {
+            // If qualification fails, continue without it
+            \Log::debug('WorkspaceQueryBuilder qualification failed in toSql', [
+                'table' => $this->from,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        
+        return parent::toSql();
+    }
+
+    /**
      * Run the query as a "select" statement against the connection.
      *
      * @return array
      */
     protected function runSelect()
     {
+        // Qualify columns before executing query
         try {
             $this->qualifyAmbiguousColumns();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // If qualification fails, continue without it
             // This prevents breaking queries on non-workspace tables
+            // Log the error for debugging but don't break the query
+            \Log::debug('WorkspaceQueryBuilder qualification failed in runSelect', [
+                'table' => $this->from,
+                'error' => $e->getMessage(),
+            ]);
         }
         return parent::runSelect();
     }
@@ -94,24 +121,51 @@ class WorkspaceQueryBuilder extends Builder
      */
     protected function qualifyAmbiguousColumns(): void
     {
+        // Early exit checks - be extremely defensive
+        
         // $this->from can be null or an Expression object, not just a string
         if (!is_string($this->from)) {
+            \Log::debug('WorkspaceQueryBuilder: from is not a string', ['from' => $this->from]);
             return;
         }
 
         // Only qualify if there are joins (which cause ambiguity)
         if (empty($this->joins)) {
+            \Log::debug('WorkspaceQueryBuilder: no joins present', ['table' => $this->from]);
+            return;
+        }
+
+        // Skip if workspaceTables is empty or not configured
+        if (empty(self::$workspaceTables)) {
+            \Log::debug('WorkspaceQueryBuilder: workspaceTables is empty');
             return;
         }
 
         // Only qualify for workspace tables where we know the schema
         // For other tables, trust Laravel's query builder to handle it correctly
         if (!isset(self::$workspaceTables[$this->from])) {
+            \Log::debug('WorkspaceQueryBuilder: table not in workspaceTables', [
+                'table' => $this->from,
+                'workspaceTables' => array_keys(self::$workspaceTables)
+            ]);
             return;
         }
 
         $table = $this->from;
+        
+        // Double-check the table is actually in workspaceTables
+        if (!array_key_exists($table, self::$workspaceTables)) {
+            return;
+        }
+        
         $keyName = self::$workspaceTables[$table];
+
+        \Log::debug('WorkspaceQueryBuilder: Starting qualification', [
+            'table' => $table,
+            'keyName' => $keyName,
+            'joins_count' => count($this->joins),
+            'wheres_count' => count($this->wheres)
+        ]);
 
         // Build list of columns to qualify - only common ambiguous columns
         // We use a conservative list to avoid qualifying columns from joined tables
@@ -121,19 +175,33 @@ class WorkspaceQueryBuilder extends Builder
         $this->qualifySelectColumns($table, $columnsToQualify);
 
         // Qualify columns in WHERE clause ONLY
+        $qualified = 0;
         foreach ($this->wheres as $index => $where) {
             // Handle standard column references
             if (isset($where['column']) && is_string($where['column'])) {
                 $column = $where['column'];
                 // If column needs qualification and doesn't have table prefix, qualify it
                 if (in_array($column, $columnsToQualify, true) && !str_contains($column, '.')) {
+                    \Log::debug('WorkspaceQueryBuilder: Qualifying column', [
+                        'column' => $column,
+                        'qualified_as' => $table . '.' . $column
+                    ]);
                     $this->wheres[$index]['column'] = $table . '.' . $column;
+                    $qualified++;
                 }
             }
 
             // Handle raw SQL in 'sql' key (used by whereRaw)
             if (isset($where['sql']) && is_string($where['sql'])) {
+                $original = $where['sql'];
                 $this->wheres[$index]['sql'] = $this->qualifyColumnsInSql($where['sql'], $table, $columnsToQualify);
+                if ($original !== $this->wheres[$index]['sql']) {
+                    \Log::debug('WorkspaceQueryBuilder: Qualified raw SQL', [
+                        'original' => $original,
+                        'qualified' => $this->wheres[$index]['sql']
+                    ]);
+                    $qualified++;
+                }
             }
 
             // Handle 'value' key which may contain Expression objects or raw SQL
@@ -141,21 +209,97 @@ class WorkspaceQueryBuilder extends Builder
                 $this->wheres[$index]['value'] = $this->qualifyColumnsInSql($where['value'], $table, $columnsToQualify);
             }
         }
+        
+        \Log::debug('WorkspaceQueryBuilder: Qualification complete', [
+            'qualified_count' => $qualified
+        ]);
+    }
+
+    /**
+     * Get all joined table names from the query.
+     */
+    protected function getJoinedTables(): array
+    {
+        $tables = [];
+        if (!empty($this->joins)) {
+            foreach ($this->joins as $join) {
+                if (isset($join->table) && is_string($join->table)) {
+                    $tables[] = $join->table;
+                }
+            }
+        }
+        return $tables;
+    }
+
+    /**
+     * Detect if a column likely belongs to a joined table by analyzing join conditions.
+     * This helps prevent qualifying columns that belong to joined tables.
+     */
+    protected function columnBelongsToJoinedTable(string $column): bool
+    {
+        if (empty($this->joins)) {
+            return false;
+        }
+
+        foreach ($this->joins as $join) {
+            if (!isset($join->table) || !is_string($join->table)) {
+                continue;
+            }
+
+            // Check if any join condition references this column with the joined table
+            if (isset($join->clauses)) {
+                foreach ($join->clauses as $clause) {
+                    // Look for patterns like "joined_table.column"
+                    if (isset($clause['first']) && is_string($clause['first'])) {
+                        $parts = explode('.', $clause['first']);
+                        if (count($parts) === 2 && $parts[1] === $column) {
+                            return true; // Column belongs to joined table
+                        }
+                    }
+                    if (isset($clause['second']) && is_string($clause['second'])) {
+                        $parts = explode('.', $clause['second']);
+                        if (count($parts) === 2 && $parts[1] === $column) {
+                            return true; // Column belongs to joined table
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
      * Qualify ambiguous columns in the SELECT clause.
      * 
-     * NOTE: We intentionally DO NOT qualify SELECT columns because:
-     * 1. Laravel's query builder already handles column selection properly
-     * 2. Qualifying SELECT columns can break queries with joins where columns come from different tables
-     * 3. The main ambiguity issue is in WHERE clauses, not SELECT clauses
+     * We use intelligent detection to only qualify columns that belong to the main table.
      */
     protected function qualifySelectColumns(string $table, array $columnsToQualify): void
     {
-        // Intentionally left empty - do not qualify SELECT columns
-        // This prevents breaking queries like permissions joins where columns come from multiple tables
-        return;
+        if (empty($this->columns)) {
+            return;
+        }
+
+        foreach ($this->columns as $index => $column) {
+            // Skip if already qualified, is *, or is an Expression
+            if (!is_string($column)) {
+                continue;
+            }
+
+            if ($column === '*' || str_contains($column, '.') || str_contains($column, '(')) {
+                continue;
+            }
+
+            // Skip if column likely belongs to a joined table
+            if ($this->columnBelongsToJoinedTable($column)) {
+                continue;
+            }
+
+            // Only qualify if it's an ambiguous column that belongs to the main table
+            if (in_array($column, $columnsToQualify, true)) {
+                $this->columns[$index] = $table . '.' . $column;
+            }
+        }
     }
 
     /**
