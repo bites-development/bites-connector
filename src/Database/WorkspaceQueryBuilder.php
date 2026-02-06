@@ -167,9 +167,17 @@ class WorkspaceQueryBuilder extends Builder
             'wheres_count' => count($this->wheres)
         ]);
 
-        // Build list of columns to qualify - only common ambiguous columns
-        // We use a conservative list to avoid qualifying columns from joined tables
-        $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
+        // Get list of joined tables
+        $joinedTables = $this->getJoinedTables();
+        
+        // Intelligently detect which columns are actually ambiguous by checking the schema
+        $columnsToQualify = $this->getAmbiguousColumnsFromSchema($table, $joinedTables);
+        
+        // If schema detection fails or returns empty, fall back to the conservative list
+        if (empty($columnsToQualify)) {
+            \Log::debug('WorkspaceQueryBuilder: Schema detection returned empty, using fallback list');
+            $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
+        }
 
         // DO NOT qualify SELECT clause - see qualifySelectColumns() comment
         $this->qualifySelectColumns($table, $columnsToQualify);
@@ -223,12 +231,67 @@ class WorkspaceQueryBuilder extends Builder
         $tables = [];
         if (!empty($this->joins)) {
             foreach ($this->joins as $join) {
-                if (isset($join->table) && is_string($join->table)) {
+                if (isset($join->table)) {
                     $tables[] = $join->table;
                 }
             }
         }
         return $tables;
+    }
+
+    /**
+     * Get columns that exist in multiple tables (truly ambiguous).
+     * 
+     * @param string $mainTable
+     * @param array $joinedTables
+     * @return array List of column names that exist in more than one table
+     */
+    protected function getAmbiguousColumnsFromSchema(string $mainTable, array $joinedTables): array
+    {
+        $allTables = array_merge([$mainTable], $joinedTables);
+        $columnsByTable = [];
+        
+        // Get columns for each table from the database schema
+        foreach ($allTables as $table) {
+            try {
+                $columns = \DB::getSchemaBuilder()->getColumnListing($table);
+                $columnsByTable[$table] = $columns;
+            } catch (\Exception $e) {
+                // If we can't get schema for a table, skip it
+                \Log::debug('WorkspaceQueryBuilder: Could not get schema for table', [
+                    'table' => $table,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
+        }
+        
+        // Find columns that appear in multiple tables
+        $columnCounts = [];
+        foreach ($columnsByTable as $table => $columns) {
+            foreach ($columns as $column) {
+                if (!isset($columnCounts[$column])) {
+                    $columnCounts[$column] = [];
+                }
+                $columnCounts[$column][] = $table;
+            }
+        }
+        
+        // Return only columns that exist in the main table AND at least one joined table
+        $ambiguousColumns = [];
+        foreach ($columnCounts as $column => $tables) {
+            if (count($tables) > 1 && in_array($mainTable, $tables)) {
+                $ambiguousColumns[] = $column;
+            }
+        }
+        
+        \Log::debug('WorkspaceQueryBuilder: Detected ambiguous columns from schema', [
+            'main_table' => $mainTable,
+            'joined_tables' => $joinedTables,
+            'ambiguous_columns' => $ambiguousColumns
+        ]);
+        
+        return $ambiguousColumns;
     }
 
     /**
