@@ -57,5 +57,17 @@ return [
         'FILTERED_MODULES'=>[
             // \App\Models\Posts::class,
         ],
-    ]
+    ],
+    'plan_webhooks' => [
+        'enabled' => env('BITES_PLAN_WEBHOOKS_ENABLED', true),
+        'app_model' => env('BITES_PLAN_APP_MODEL', 'Bites\Modules\Role\Models\App'),
+        'plan_model' => env('BITES_PLAN_MODEL'),
+        'webhook_path' => env('BITES_PLAN_WEBHOOK_PATH', '/api/webhooks/plan-changed'),
+        'timeout' => env('BITES_PLAN_WEBHOOK_TIMEOUT', 10),
+        'topic_column' => env('BITES_PLAN_TOPIC_COLUMN', 'prefix'),
+        'slug_column' => env('BITES_PLAN_SLUG_COLUMN', 'slug'),
+        'name_column' => env('BITES_PLAN_NAME_COLUMN', 'name'),
+        'metadata_column' => env('BITES_PLAN_METADATA_COLUMN', 'metadata'),
+        'status_column' => env('BITES_PLAN_STATUS_COLUMN', 'active'),
+    ],
 ];
