@@ -10,6 +10,22 @@ use Modules\BitesMiddleware\Models\WorkspaceUser;
 return [
     'name' => 'Bite Middleware',
     'CHECK_AUTH_PATH' => CheckAuthUser::class,
+    'app_prefix_defaults' => [
+        'inbusiness' => 'dash',
+        'dash' => 'dash',
+        'incallz' => 'incontact',
+        'incontact' => 'incontact',
+        'incontactai' => 'incontact',
+        'incontacts' => 'incontact',
+        'ineventz' => 'ineventz',
+        'infilez' => 'infilez',
+        'inweb' => 'inweb',
+        'tabletrack' => 'resturant',
+        'resturant' => 'resturant',
+        'jobs' => 'jobs',
+        'injobs' => 'jobs',
+        'mart' => 'mart',
+    ],
 
     // Enable/disable SNS publishing for workspace events
     'SNS_ENABLED' => env('BITES_SNS_ENABLED', false),
@@ -69,5 +85,13 @@ return [
         'name_column' => env('BITES_PLAN_NAME_COLUMN', 'name'),
         'metadata_column' => env('BITES_PLAN_METADATA_COLUMN', 'metadata'),
         'status_column' => env('BITES_PLAN_STATUS_COLUMN', 'active'),
+    ],
+    'plan_schema_sync' => [
+        'enabled' => env('BITES_PLAN_SCHEMA_SYNC_ENABLED', true),
+        'endpoint' => env('BITES_PLAN_SCHEMA_SYNC_ENDPOINT', '/api/webhooks/plans/schema-sync'),
+        'timeout' => env('BITES_PLAN_SCHEMA_SYNC_TIMEOUT', 20),
+        'token' => env('BITES_MIDDLEWARE_API_TOKEN', env('BITES_CONNECTOR_SYNC_TOKEN', '')),
+        'max_snippets' => env('BITES_PLAN_SCHEMA_MAX_SNIPPETS', 20),
+        'max_snippet_chars' => env('BITES_PLAN_SCHEMA_MAX_SNIPPET_CHARS', 12000),
     ],
 ];

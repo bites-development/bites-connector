@@ -6,6 +6,7 @@ namespace Modules\BitesMiddleware\Providers;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Modules\BitesMiddleware\Console\Commands\SyncPlanSchemaCommand;
 use Modules\BitesMiddleware\Middleware\CheckAuthUser;
 use Modules\BitesMiddleware\Middleware\CheckWorkspace;
 
@@ -21,6 +22,11 @@ class BitesServiceProvider extends ServiceProvider
         $this->mergeConfig();
         $this->registerMigration();
         $this->publishAuth();
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SyncPlanSchemaCommand::class,
+            ]);
+        }
         $this->publishes(
             [
                 __DIR__ . '/../Config/bites.php' => config_path('bites.php'),
