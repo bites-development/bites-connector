@@ -23,13 +23,13 @@ class SyncPlanSchemaCommand extends Command
     {
         $options = [
             'dry_run' => (bool) $this->option('dry-run'),
-            'endpoint' => (string) ($this->option('endpoint') ?? ''),
-            'app_prefix' => (string) ($this->option('app-prefix') ?? ''),
-            'table_name' => (string) ($this->option('table') ?? ''),
+            'endpoint' => trim((string) ($this->option('endpoint') ?? '')),
+            'app_prefix' => trim((string) ($this->option('app-prefix') ?? '')),
+            'table_name' => trim((string) ($this->option('table') ?? '')),
             'max_snippets' => $this->option('max-snippets') !== null ? (int) $this->option('max-snippets') : null,
             'max_snippet_chars' => $this->option('max-snippet-chars') !== null ? (int) $this->option('max-snippet-chars') : null,
         ];
-        $options = array_filter($options, static fn ($value) => $value !== null);
+        $options = array_filter($options, static fn ($value) => $value !== null && $value !== '');
 
         $result = $service->sync($options);
 
@@ -66,4 +66,3 @@ class SyncPlanSchemaCommand extends Command
         return self::SUCCESS;
     }
 }
-
