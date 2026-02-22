@@ -127,19 +127,41 @@ class WorkspaceQueryBuilder extends Builder
 
         // Qualify columns in WHERE clause
         foreach ($this->wheres as $index => $where) {
-            if (isset($where['column']) && is_string($where['column'])) {
-                $column = $where['column'];
-                if (in_array($column, $columnsToQualify, true) && !str_contains($column, '.')) {
-                    $this->wheres[$index]['column'] = $table . '.' . $column;
+            $this->qualifyWhereClause($this->wheres[$index], $table, $columnsToQualify);
+        }
+    }
+
+    /**
+     * Qualify ambiguous columns for a where clause, including nested wheres.
+     */
+    protected function qualifyWhereClause(array &$where, string $table, array $columnsToQualify): void
+    {
+        if (isset($where['column']) && is_string($where['column'])) {
+            $column = $where['column'];
+            if (in_array($column, $columnsToQualify, true) && !str_contains($column, '.')) {
+                $where['column'] = $table . '.' . $column;
+            }
+        }
+
+        if (isset($where['sql']) && is_string($where['sql'])) {
+            $where['sql'] = $this->qualifyColumnsInSql($where['sql'], $table, $columnsToQualify);
+        }
+
+        if (isset($where['value']) && is_string($where['value'])) {
+            $where['value'] = $this->qualifyColumnsInSql($where['value'], $table, $columnsToQualify);
+        }
+
+        // where(function ($q) { ... }) compiles as type=Nested and carries its own wheres.
+        if (
+            ($where['type'] ?? null) === 'Nested'
+            && isset($where['query'])
+            && $where['query'] instanceof Builder
+            && is_array($where['query']->wheres ?? null)
+        ) {
+            foreach ($where['query']->wheres as $nestedIndex => $nestedWhere) {
+                if (is_array($nestedWhere)) {
+                    $this->qualifyWhereClause($where['query']->wheres[$nestedIndex], $table, $columnsToQualify);
                 }
-            }
-
-            if (isset($where['sql']) && is_string($where['sql'])) {
-                $this->wheres[$index]['sql'] = $this->qualifyColumnsInSql($where['sql'], $table, $columnsToQualify);
-            }
-
-            if (isset($where['value']) && is_string($where['value'])) {
-                $this->wheres[$index]['value'] = $this->qualifyColumnsInSql($where['value'], $table, $columnsToQualify);
             }
         }
     }
