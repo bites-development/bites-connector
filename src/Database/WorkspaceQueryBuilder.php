@@ -23,6 +23,10 @@ class WorkspaceQueryBuilder extends Builder
      */
     protected static array $ambiguousColumns = [
         'id',
+        'user_id',
+        'b_user_id',
+        'model_id',
+        'workspace',
         'created_at',
         'updated_at',
         'deleted_at',
@@ -38,6 +42,7 @@ class WorkspaceQueryBuilder extends Builder
     public function toSql()
     {
         try {
+            $this->normalizeWildcardSelectForJoinedQueries();
             $this->qualifyAmbiguousColumns();
             $this->fixIncorrectQualifications();
         } catch (\Throwable $e) {
@@ -55,6 +60,7 @@ class WorkspaceQueryBuilder extends Builder
     protected function runSelect()
     {
         try {
+            $this->normalizeWildcardSelectForJoinedQueries();
             $this->qualifyAmbiguousColumns();
         } catch (\Throwable $e) {
             // Silently continue if qualification fails
@@ -107,28 +113,208 @@ class WorkspaceQueryBuilder extends Builder
             return;
         }
 
-        if (!isset(self::$workspaceTables[$this->from])) {
+        [$mainTable, $mainAlias] = $this->parseTableAndAlias($this->from);
+        if ($mainTable === '') {
             return;
         }
 
-        $table = $this->from;
-        $keyName = self::$workspaceTables[$table];
-        $joinedTables = $this->getJoinedTables();
+        $tableReference = $mainAlias !== '' ? $mainAlias : $mainTable;
+
+        $keyName = self::$workspaceTables[$mainTable]
+            ?? self::$workspaceTables[$tableReference]
+            ?? null;
+
+        if ($keyName === null) {
+            return;
+        }
+
+        $joinedTables = $this->getJoinedPhysicalTables();
         
         // Detect which columns are actually ambiguous by checking the schema
-        $columnsToQualify = $this->getAmbiguousColumnsFromSchema($table, $joinedTables);
+        $columnsToQualify = $this->getAmbiguousColumnsFromSchema($mainTable, $joinedTables);
         
         // Fallback to conservative list if schema detection fails
         if (empty($columnsToQualify)) {
             $columnsToQualify = array_unique(array_merge(self::$ambiguousColumns, [$keyName]));
         }
 
-        $this->qualifySelectColumns($table, $columnsToQualify);
+        $this->qualifySelectColumns($tableReference, $columnsToQualify);
 
         // Qualify columns in WHERE clause
         foreach ($this->wheres as $index => $where) {
-            $this->qualifyWhereClause($this->wheres[$index], $table, $columnsToQualify);
+            $this->qualifyWhereClause($this->wheres[$index], $tableReference, $columnsToQualify);
         }
+    }
+
+    /**
+     * Prevent joined wildcard hydration collisions (e.g. joined "id" overriding base "id").
+     * Only rewrites wildcard selections and leaves explicit column selections untouched.
+     */
+    protected function normalizeWildcardSelectForJoinedQueries(): void
+    {
+        if (empty($this->joins) || !is_string($this->from)) {
+            return;
+        }
+
+        $baseRef = $this->getBaseTableReference();
+        if ($baseRef === '') {
+            return;
+        }
+
+        $joinReferenceMap = $this->getJoinReferenceMap();
+
+        if (is_null($this->columns)) {
+            $this->columns = [$baseRef . '.*'];
+            return;
+        }
+
+        if (!is_array($this->columns)) {
+            return;
+        }
+
+        $normalized = [];
+        $changed = false;
+
+        foreach ($this->columns as $column) {
+            if (!is_string($column)) {
+                $normalized[] = $column;
+                continue;
+            }
+
+            $trimmed = trim($column);
+
+            if ($trimmed === '*') {
+                $normalized[] = $baseRef . '.*';
+                $changed = true;
+                continue;
+            }
+
+            if (preg_match('/^([`"\\[\\]\\w]+)\\.\\*$/', $trimmed, $matches) === 1) {
+                $wildcardRef = trim($matches[1], '`"[]');
+
+                if ($wildcardRef !== $baseRef && isset($joinReferenceMap[$wildcardRef])) {
+                    $expanded = $this->expandJoinWildcardSelect(
+                        $wildcardRef,
+                        $joinReferenceMap[$wildcardRef]
+                    );
+
+                    if (!empty($expanded)) {
+                        foreach ($expanded as $expandedColumn) {
+                            $normalized[] = $expandedColumn;
+                        }
+                        $changed = true;
+                        continue;
+                    }
+                }
+            }
+
+            $normalized[] = $column;
+        }
+
+        if ($changed) {
+            $this->columns = $normalized;
+        }
+    }
+
+    /**
+     * Resolve the base table reference used in SELECTs.
+     * If FROM uses an alias, prefer the alias.
+     */
+    protected function getBaseTableReference(): string
+    {
+        $from = trim($this->from);
+        if ($from === '' || str_starts_with($from, '(')) {
+            return '';
+        }
+
+        if (preg_match('/\\s+as\\s+([`"\\[\\]\\w]+)$/i', $from, $matches) === 1) {
+            return trim($matches[1], '`"[]');
+        }
+
+        if (preg_match('/\\s+([`"\\[\\]\\w]+)$/', $from, $matches) === 1 && str_contains($from, ' ')) {
+            return trim($matches[1], '`"[]');
+        }
+
+        return trim($from, '`"[]');
+    }
+
+    /**
+     * Map join references (alias or table name) to physical table names.
+     *
+     * @return array<string, string>
+     */
+    protected function getJoinReferenceMap(): array
+    {
+        $map = [];
+
+        foreach ($this->joins as $join) {
+            if (!isset($join->table) || !is_string($join->table)) {
+                continue;
+            }
+
+            [$tableName, $alias] = $this->parseTableAndAlias($join->table);
+            if ($tableName === '') {
+                continue;
+            }
+
+            $map[$tableName] = $tableName;
+
+            if ($alias !== '') {
+                $map[$alias] = $tableName;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Expand "<join_alias>.*" into aliased columns to prevent hydration collisions.
+     *
+     * @return array<int, string>
+     */
+    protected function expandJoinWildcardSelect(string $joinReference, string $tableName): array
+    {
+        try {
+            $columns = \DB::getSchemaBuilder()->getColumnListing($tableName);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        if (empty($columns)) {
+            return [];
+        }
+
+        $aliasPrefix = preg_replace('/[^A-Za-z0-9_]/', '_', $joinReference) ?: $joinReference;
+        $expanded = [];
+
+        foreach ($columns as $column) {
+            $expanded[] = $joinReference . '.' . $column . ' as ' . $aliasPrefix . '__' . $column;
+        }
+
+        return $expanded;
+    }
+
+    /**
+     * Parse "table", "table alias", or "table as alias".
+     *
+     * @return array{0:string,1:string}
+     */
+    protected function parseTableAndAlias(string $reference): array
+    {
+        $reference = trim($reference);
+        if ($reference === '') {
+            return ['', ''];
+        }
+
+        if (preg_match('/^([`"\\[\\]\\w.]+)\\s+as\\s+([`"\\[\\]\\w]+)$/i', $reference, $matches) === 1) {
+            return [trim($matches[1], '`"[]'), trim($matches[2], '`"[]')];
+        }
+
+        if (preg_match('/^([`"\\[\\]\\w.]+)\\s+([`"\\[\\]\\w]+)$/', $reference, $matches) === 1) {
+            return [trim($matches[1], '`"[]'), trim($matches[2], '`"[]')];
+        }
+
+        return [trim($reference, '`"[]'), ''];
     }
 
     /**
@@ -180,6 +366,29 @@ class WorkspaceQueryBuilder extends Builder
             }
         }
         return $tables;
+    }
+
+    /**
+     * Get joined physical table names (without aliases) for schema inspection.
+     */
+    protected function getJoinedPhysicalTables(): array
+    {
+        $tables = [];
+
+        if (!empty($this->joins)) {
+            foreach ($this->joins as $join) {
+                if (!isset($join->table) || !is_string($join->table)) {
+                    continue;
+                }
+
+                [$tableName] = $this->parseTableAndAlias($join->table);
+                if ($tableName !== '') {
+                    $tables[] = $tableName;
+                }
+            }
+        }
+
+        return array_values(array_unique($tables));
     }
 
     /**
