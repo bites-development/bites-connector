@@ -23,7 +23,9 @@ class SnsServiceProvider extends BaseServiceProvider
         $this->publishListener();
         $this->registerMigrations();
         $this->registerListeners();
-        Event::listen(SnsMessageReceived::class, WorkspaceListener::class);
+        if ($this->shouldConsumeWorkspaceSync()) {
+            Event::listen(SnsMessageReceived::class, WorkspaceListener::class);
+        }
     }
 
     public function register(): void
@@ -50,5 +52,15 @@ class SnsServiceProvider extends BaseServiceProvider
         Route::prefix('api')
             ->middleware('api')
             ->group(__DIR__. '/../Resources/routes/api.php');
+    }
+
+    private function shouldConsumeWorkspaceSync(): bool
+    {
+        return $this->workspaceSyncMode() === 'mirror-sns';
+    }
+
+    private function workspaceSyncMode(): string
+    {
+        return strtolower(trim((string) config('bites.workspace_sync_mode', 'mirror-db')));
     }
 }

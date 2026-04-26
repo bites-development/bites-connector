@@ -10,6 +10,8 @@ use Modules\BitesMiddleware\Models\WorkspaceUser;
 return [
     'name' => 'Bite Middleware',
     'CHECK_AUTH_PATH' => CheckAuthUser::class,
+    'public_workspace_source_app_prefix' => env('BITES_PUBLIC_WORKSPACE_SOURCE_APP_PREFIX', 'dash'),
+    'workspace_sync_mode' => env('BITES_WORKSPACE_SYNC_MODE', 'mirror-db'),
     'app_prefix_defaults' => [
         'inbusiness' => 'dash',
         'dash' => 'dash',

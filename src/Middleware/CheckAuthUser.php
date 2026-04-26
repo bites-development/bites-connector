@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Modules\BitesMiddleware\Services\WorkspaceBootstrapService;
 
 class CheckAuthUser
 {
@@ -75,7 +76,10 @@ class CheckAuthUser
         if(empty($user->id)){
            $user = $this->customRegister($responseUser->name,$responseUser->email);
         }
-        return $this->syncPlanFromMiddleware($user, $responseUser);
+        $user = $this->syncPlanFromMiddleware($user, $responseUser);
+        app(WorkspaceBootstrapService::class)->ensureRequestedWorkspaceContext(request(), $user);
+
+        return $user;
     }
 
     private function loginUsingEmailAndPassword($email, $password): User|null
