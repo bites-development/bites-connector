@@ -13,11 +13,23 @@ class ResolveWorkspaceContext
 {
     public function handle(Request $request, Closure $next)
     {
-        $workspaceIdentity = app(WorkspaceIdentityService::class);
-        $publicWorkspaceId = $workspaceIdentity->getRequestedWorkspaceId($request);
+        if (!class_exists(WorkspaceIdentityService::class) || !class_exists(WorkspaceBootstrapService::class)) {
+            return $next($request);
+        }
+
+        try {
+            $workspaceIdentity = app()->make(WorkspaceIdentityService::class);
+            $publicWorkspaceId = $workspaceIdentity->getRequestedWorkspaceId($request);
+        } catch (\Throwable) {
+            return $next($request);
+        }
 
         if (!empty($publicWorkspaceId)) {
-            app(WorkspaceBootstrapService::class)->ensureRequestedWorkspaceContext($request);
+            try {
+                app()->make(WorkspaceBootstrapService::class)->ensureRequestedWorkspaceContext($request);
+            } catch (\Throwable) {
+                return $next($request);
+            }
         }
 
         return $next($request);
