@@ -14,7 +14,16 @@ class SyncWorkspaceService
     public function sync()
     {
         $request = request();
-        $workspaceIdentity = app(WorkspaceIdentityService::class);
+        if (!class_exists(WorkspaceIdentityService::class)) {
+            return;
+        }
+
+        try {
+            $workspaceIdentity = app()->make(WorkspaceIdentityService::class);
+        } catch (\Throwable) {
+            return;
+        }
+
         $workspaceId = $workspaceIdentity->getRequestedWorkspaceId($request);
 
         if (empty($workspaceId)) {

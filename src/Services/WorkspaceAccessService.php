@@ -43,7 +43,15 @@ class WorkspaceAccessService
      */
     public function getActiveWorkspaceId(): int
     {
-        return (int) (app(WorkspaceIdentityService::class)->getResolvedWorkspaceId() ?? 0);
+        if (!class_exists(WorkspaceIdentityService::class)) {
+            return (int) request()->header('ACTIVE-WORKSPACE', 0);
+        }
+
+        try {
+            return (int) (app()->make(WorkspaceIdentityService::class)->getResolvedWorkspaceId() ?? 0);
+        } catch (\Throwable) {
+            return (int) request()->header('ACTIVE-WORKSPACE', 0);
+        }
     }
 
     /**

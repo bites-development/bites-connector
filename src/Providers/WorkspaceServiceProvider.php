@@ -218,10 +218,19 @@ class WorkspaceServiceProvider extends ServiceProvider
             if (Cache::get(md5($table . 'workspace_id')) == true) {
                 continue;
             }
-            if (Schema::hasTable($table) && !Schema::hasColumn($table, 'workspace_id')) {
-                Schema::table($table, function (Blueprint $table) {
-                    $table->unsignedBigInteger('workspace_id')->nullable();
-                });
+            try {
+                if (Schema::hasTable($table) && !Schema::hasColumn($table, 'workspace_id')) {
+                    Schema::table($table, function (Blueprint $table) {
+                        $table->unsignedBigInteger('workspace_id')->nullable();
+                    });
+                }
+            } catch (\Throwable $exception) {
+                Log::warning('Skipping dynamic workspace migration bootstrap.', [
+                    'table' => $table,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                continue;
             }
             Cache::forever(md5($table . 'workspace_id'), true);
         }

@@ -17,16 +17,40 @@ class Workspace extends Model
 
     public function getPublicId(): int
     {
-        return app(WorkspaceIdentityService::class)->getPublicId($this);
+        if (!class_exists(WorkspaceIdentityService::class)) {
+            return (int) $this->getKey();
+        }
+
+        try {
+            return app()->make(WorkspaceIdentityService::class)->getPublicId($this);
+        } catch (\Throwable) {
+            return (int) $this->getKey();
+        }
     }
 
     public static function findByPublicId(mixed $workspaceId): ?self
     {
-        return app(WorkspaceIdentityService::class)->findByPublicId($workspaceId, static::class);
+        if (!class_exists(WorkspaceIdentityService::class)) {
+            return static::query()->find($workspaceId);
+        }
+
+        try {
+            return app()->make(WorkspaceIdentityService::class)->findByPublicId($workspaceId, static::class);
+        } catch (\Throwable) {
+            return static::query()->find($workspaceId);
+        }
     }
 
     public static function resolveLocalId(mixed $workspaceId): ?int
     {
-        return app(WorkspaceIdentityService::class)->resolveLocalId($workspaceId, static::class);
+        if (!class_exists(WorkspaceIdentityService::class)) {
+            return static::query()->find($workspaceId)?->getKey();
+        }
+
+        try {
+            return app()->make(WorkspaceIdentityService::class)->resolveLocalId($workspaceId, static::class);
+        } catch (\Throwable) {
+            return static::query()->find($workspaceId)?->getKey();
+        }
     }
 }
