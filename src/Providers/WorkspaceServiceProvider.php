@@ -89,6 +89,10 @@ class WorkspaceServiceProvider extends ServiceProvider
 
     private function assignWorkspaceObserver()
     {
+        if (!$this->shouldPublishWorkspaceSync()) {
+            return;
+        }
+
         $class = config('bites.WORKSPACE.MAIN_WORKSPACE_CLASS', Workspace::class);
         $class::observe(WorkspaceObserver::class);
     }
@@ -221,6 +225,16 @@ class WorkspaceServiceProvider extends ServiceProvider
             }
             Cache::forever(md5($table . 'workspace_id'), true);
         }
+    }
+
+    private function shouldPublishWorkspaceSync(): bool
+    {
+        return $this->workspaceSyncMode() === 'source';
+    }
+
+    private function workspaceSyncMode(): string
+    {
+        return strtolower(trim((string) config('bites.workspace_sync_mode', 'mirror-db')));
     }
 
     private function registerBuilderMacros()

@@ -6,11 +6,11 @@ namespace Modules\BitesMiddleware\Repositories;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\BitesMiddleware\Models\WorkspaceUser;
+use Modules\BitesMiddleware\Models\WorkspaceUserMasterDB;
 
 class WorkspaceUserRepository
 {
-    public function __construct(private WorkspaceUser $model)
+    public function __construct(private WorkspaceUserMasterDB $model)
     {
     }
 

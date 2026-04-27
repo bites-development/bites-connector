@@ -9,6 +9,7 @@ use Illuminate\Support\ServiceProvider;
 use Modules\BitesMiddleware\Console\Commands\SyncPlanSchemaCommand;
 use Modules\BitesMiddleware\Middleware\CheckAuthUser;
 use Modules\BitesMiddleware\Middleware\CheckWorkspace;
+use Modules\BitesMiddleware\Middleware\ResolveWorkspaceContext;
 
 class BitesServiceProvider extends ServiceProvider
 {
@@ -44,6 +45,7 @@ class BitesServiceProvider extends ServiceProvider
         $class = config('bites.CHECK_AUTH_PATH', CheckAuthUser::class);
         $kernel = $this->app->make(Kernel::class);
         $kernel->prependMiddleware($class);
+        $kernel->prependMiddleware(ResolveWorkspaceContext::class);
         $ignoreCheckWorkspace = config('bites.IGNORE_CHECK_WORKSPACE', false);
         if(!$ignoreCheckWorkspace) {
             $kernel->prependMiddleware(CheckWorkspace::class);

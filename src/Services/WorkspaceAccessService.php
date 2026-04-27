@@ -43,7 +43,7 @@ class WorkspaceAccessService
      */
     public function getActiveWorkspaceId(): int
     {
-        return (int) request()->header('ACTIVE-WORKSPACE', 0);
+        return (int) (app(WorkspaceIdentityService::class)->getResolvedWorkspaceId() ?? 0);
     }
 
     /**
